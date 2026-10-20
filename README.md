@@ -1,5 +1,8 @@
 # VGC Lab
 
+**Live demo:** https://vgc-lab.vercel.app
+(The API sleeps when idle on the free tier; the first request can take up to a minute.)
+
 A team builder and damage calculator for Pokémon VGC (Scarlet/Violet, doubles at level 50).
 Create an account, build teams from the full Pokédex, save them, and compare them against
 other teams: speed order, damage between every move and every target, and type matchups.
