@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "lint": "oxlint src",
+    "lint": "oxlint src e2e",
     "preview": "vite preview",
-    "gen:api": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.ts"
+    "gen:api": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@pkmn/data": "^0.10.11",
@@ -24,6 +25,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
