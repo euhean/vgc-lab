@@ -16,6 +16,7 @@ from app.main import app
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
     with TestClient(app) as c:
         yield c
 
