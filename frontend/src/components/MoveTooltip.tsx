@@ -1,4 +1,4 @@
-import { calcDamage, formulaBreakdown, percentRange, statusEffect, type Conditions } from '../lib/battle';
+import { calcDamage, describeResult, formulaBreakdown, percentRange, statusEffect, type Conditions } from '../lib/battle';
 import { gen } from '../lib/dex';
 import type { PokemonSet } from '../lib/team';
 
@@ -33,7 +33,7 @@ export default function MoveTooltip({ attacker, move, target, conditions }: {
         {f.modifiers.map((m) => <li key={m.label}><span>{m.label}</span><span>{m.value}</span></li>)}
       </ul>
       <p><strong>{min}–{max} HP ({pmin}–{pmax}%)</strong></p>
-      <p className="muted small">{result.kochance(false).text || 'No KO chance'}</p>
+      <p className="muted small">{describeResult(result).koText}</p>
     </div>
   );
 }

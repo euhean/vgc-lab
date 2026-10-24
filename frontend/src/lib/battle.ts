@@ -98,6 +98,18 @@ export function percentRange(result: Result): [number, number] {
   return [pct(min), pct(max)];
 }
 
+/**
+ * The calc's description of a result. The calc throws when describing a move that deals
+ * no damage (an immunity such as Fake Out into a Ghost type), so that case is handled here.
+ */
+export function describeResult(result: Result): { desc: string; koText: string } {
+  if (result.range()[1] === 0) {
+    const text = `${result.attacker.name} ${result.move.name} vs. ${result.defender.name}: no damage`;
+    return { desc: text, koText: 'No damage' };
+  }
+  return { desc: result.desc(), koText: result.kochance(false).text || 'No KO chance' };
+}
+
 export interface DamageCell {
   minPercent: number;
   maxPercent: number;
@@ -120,7 +132,7 @@ export function damageMatrix(attackers: PokemonSet[], defenders: PokemonSet[], c
         cells: defenders.map((defender) => {
           const result = calcDamage(attacker, defender, move, c, attackerIsMine);
           const [minPercent, maxPercent] = percentRange(result);
-          return { minPercent, maxPercent, desc: result.desc() };
+          return { minPercent, maxPercent, desc: describeResult(result).desc };
         }),
       })),
   }));

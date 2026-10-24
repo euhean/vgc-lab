@@ -45,6 +45,11 @@ describe('damage matrix', () => {
     expect(rows.moves[0].cells).toHaveLength(2);
     expect(rows.moves[0].cells[0].desc).toContain('Moonblast vs.');
   });
+
+  it('describes immune matchups instead of failing', () => {
+    const [rows] = damageMatrix([{ ...incineroar, moves: ['Fake Out'] }], [flutter], DEFAULT_CONDITIONS, true);
+    expect(rows.moves[0].cells[0]).toMatchObject({ maxPercent: 0, desc: expect.stringContaining('no damage') });
+  });
 });
 
 describe('speed', () => {
