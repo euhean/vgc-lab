@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  calcDamage, DEFAULT_CONDITIONS, effectiveSpeed, formulaBreakdown, percentRange, speedOrder, statusEffect, teamWeaknesses,
+  calcDamage, damageMatrix, DEFAULT_CONDITIONS, effectiveSpeed, formulaBreakdown, percentRange, speedOrder, statusEffect, teamWeaknesses,
 } from './battle';
 import { newSet } from './team';
 
@@ -34,6 +34,16 @@ describe('damage', () => {
       ...DEFAULT_CONDITIONS, theirs: { ...DEFAULT_CONDITIONS.theirs, lightScreen: true },
     }, true).range()[1];
     expect(screened).toBeLessThan(plain);
+  });
+});
+
+describe('damage matrix', () => {
+  it('has one row per damaging move and one cell per defender', () => {
+    const attacker = { ...flutter, moves: ['Moonblast', 'Protect', 'Shadow Ball'] };
+    const [rows] = damageMatrix([attacker], [incineroar, amoonguss], DEFAULT_CONDITIONS, true);
+    expect(rows.moves.map((m) => m.move)).toEqual(['Moonblast', 'Shadow Ball']);
+    expect(rows.moves[0].cells).toHaveLength(2);
+    expect(rows.moves[0].cells[0].desc).toContain('Moonblast vs.');
   });
 });
 

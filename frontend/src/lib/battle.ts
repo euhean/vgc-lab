@@ -98,6 +98,34 @@ export function percentRange(result: Result): [number, number] {
   return [pct(min), pct(max)];
 }
 
+export interface DamageCell {
+  minPercent: number;
+  maxPercent: number;
+  desc: string;
+}
+
+export interface AttackerRows {
+  attacker: PokemonSet;
+  moves: { move: string; cells: DamageCell[] }[];
+}
+
+/** Every damaging move of every attacker against every defender. Status moves are skipped. */
+export function damageMatrix(attackers: PokemonSet[], defenders: PokemonSet[], c: Conditions, attackerIsMine: boolean): AttackerRows[] {
+  return attackers.map((attacker) => ({
+    attacker,
+    moves: attacker.moves
+      .filter((move) => gen.moves.get(move)?.category !== 'Status')
+      .map((move) => ({
+        move,
+        cells: defenders.map((defender) => {
+          const result = calcDamage(attacker, defender, move, c, attackerIsMine);
+          const [minPercent, maxPercent] = percentRange(result);
+          return { minPercent, maxPercent, desc: result.desc() };
+        }),
+      })),
+  }));
+}
+
 export interface FormulaBreakdown {
   level: number;
   power: number;

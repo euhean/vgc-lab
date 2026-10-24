@@ -1,10 +1,10 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import type { TypeName } from '@pkmn/data';
 import {
-  calcDamage, defensiveMatchups, percentRange, speedOrder, teamWeaknesses,
+  damageMatrix, defensiveMatchups, speedOrder, teamWeaknesses,
   type Conditions, type GameType, type SideConditions, type Terrain, type Weather,
 } from '../lib/battle';
-import { gen, TYPES } from '../lib/dex';
+import { TYPES } from '../lib/dex';
 import type { PokemonSet } from '../lib/team';
 import { Icon } from './Sprite';
 
@@ -100,6 +100,11 @@ function SpeedTab({ mine, theirs, c }: { mine: PokemonSet[]; theirs: PokemonSet[
 function DamageTab({ mine, theirs, c }: { mine: PokemonSet[]; theirs: PokemonSet[]; c: Conditions }) {
   const [attackingIsMine, setAttackingIsMine] = useState(true);
   const [attackers, defenders] = attackingIsMine ? [mine, theirs] : [theirs, mine];
+  // Up to 144 calcs: only recompute when the teams, conditions or direction change.
+  const rows = useMemo(
+    () => damageMatrix(attackers, defenders, c, attackingIsMine),
+    [attackers, defenders, c, attackingIsMine],
+  );
 
   return (
     <div className="stack">
@@ -113,17 +118,15 @@ function DamageTab({ mine, theirs, c }: { mine: PokemonSet[]; theirs: PokemonSet
             <tr><th>Move</th>{defenders.map((d, i) => <th key={i} className="small"><Icon species={d.species} /><div>{d.species}</div></th>)}</tr>
           </thead>
           <tbody>
-            {attackers.map((a, ai) => (
+            {rows.map(({ attacker, moves }, ai) => (
               <Fragment key={ai}>
-                <tr className="group"><th colSpan={defenders.length + 1}><Icon species={a.species} /> {a.species}</th></tr>
-                {a.moves.filter((m) => gen.moves.get(m)?.category !== 'Status').map((move) => (
+                <tr className="group"><th colSpan={defenders.length + 1}><Icon species={attacker.species} /> {attacker.species}</th></tr>
+                {moves.map(({ move, cells }) => (
                   <tr key={move}>
                     <th className="move-name">{move}</th>
-                    {defenders.map((d, di) => {
-                      const result = calcDamage(a, d, move, c, attackingIsMine);
-                      const [min, max] = percentRange(result);
-                      const level = max >= 100 ? 'ko' : max >= 50 ? 'high' : max > 0 ? 'low' : 'none';
-                      return <td key={di} className={`dmg ${level}`} title={result.desc()}>{min}–{max}%</td>;
+                    {cells.map((cell, di) => {
+                      const level = cell.maxPercent >= 100 ? 'ko' : cell.maxPercent >= 50 ? 'high' : cell.maxPercent > 0 ? 'low' : 'none';
+                      return <td key={di} className={`dmg ${level}`} title={cell.desc}>{cell.minPercent}–{cell.maxPercent}%</td>;
                     })}
                   </tr>
                 ))}

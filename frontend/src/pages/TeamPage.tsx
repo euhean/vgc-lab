@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, type TeamRecord } from '../api/client';
 import ComparePanel from '../components/ComparePanel';
@@ -32,7 +32,11 @@ export default function TeamPage() {
 
   const opponent = allTeams.find((t) => t.id === opponentId);
   // Comparing against this same team uses the live, unsaved sets.
-  const opponentSets = opponentId === id ? sets : opponent ? parseTeam(opponent.paste) : [];
+  const opponentPaste = opponent?.paste;
+  const opponentSets = useMemo(
+    () => (opponentId === id ? sets : opponentPaste !== undefined ? parseTeam(opponentPaste) : []),
+    [opponentId, id, sets, opponentPaste],
+  );
 
   const change = (next: PokemonSet[]) => {
     setSets(next);
