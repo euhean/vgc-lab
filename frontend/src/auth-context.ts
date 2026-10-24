@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { User } from './api';
+import type { User } from './api/client';
 
 export interface AuthState {
   user: User | null;

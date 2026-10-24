@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, type TeamRecord } from '../api';
+import { api, type TeamRecord } from '../api/client';
 import { Icon } from '../components/Sprite';
 import { exportTeam, parseTeam } from '../lib/team';
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, type TeamRecord } from '../api';
+import { api, type TeamRecord } from '../api/client';
 import ComparePanel from '../components/ComparePanel';
 import MonEditor from '../components/MonEditor';
 import Pokedex from '../components/Pokedex';
