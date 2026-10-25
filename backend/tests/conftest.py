@@ -11,12 +11,14 @@ from fastapi.testclient import TestClient
 
 from app.database import Base, engine
 from app.main import app
+from app.routers.auth import login_limiter
 
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    login_limiter.clear()
     with TestClient(app) as c:
         yield c
 

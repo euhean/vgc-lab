@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_expire_minutes: int = 60 * 24
     cors_origins: list[str] = ["http://localhost:5173"]
+    login_attempts_per_minute: int = 10
 
 
 settings = Settings()
