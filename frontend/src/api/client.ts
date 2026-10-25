@@ -4,13 +4,24 @@ import type { components, paths } from './schema';
 const API_URL: string = import.meta.env.VITE_API_URL;
 if (!API_URL) throw new Error('VITE_API_URL is not set');
 
-const TOKEN_KEY = 'vgc-lab-token';
+const ACCESS_KEY = 'vgc-lab-access-token';
+const REFRESH_KEY = 'vgc-lab-refresh-token';
 
 export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  access: () => localStorage.getItem(ACCESS_KEY),
+  refresh: () => localStorage.getItem(REFRESH_KEY),
+  set: (tokens: { access_token: string; refresh_token: string }) => {
+    localStorage.setItem(ACCESS_KEY, tokens.access_token);
+    localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+  },
+  clear: () => {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  },
 };
+
+/** Fires "expired" when the session can't be refreshed, so the app can return to the login page. */
+export const sessionEvents = new EventTarget();
 
 export class ApiError extends Error {
   readonly status: number;
@@ -26,12 +37,49 @@ export type TeamInput = components['schemas']['TeamIn'];
 export type TeamRecord = components['schemas']['TeamOut'];
 
 const client = createClient<paths>({ baseUrl: API_URL });
+// Used only to refresh tokens, so refreshing never goes through the retry middleware below.
+const refreshClient = createClient<paths>({ baseUrl: API_URL });
+
+let refreshing: Promise<boolean> | null = null;
+
+/** Exchanges the refresh token for new tokens. Concurrent callers share one request. */
+function refreshTokens(): Promise<boolean> {
+  refreshing ??= (async () => {
+    const refresh_token = tokenStore.refresh();
+    if (!refresh_token) return false;
+    const { data } = await refreshClient.POST('/auth/refresh', { body: { refresh_token } });
+    if (!data) {
+      tokenStore.clear();
+      sessionEvents.dispatchEvent(new Event('expired'));
+      return false;
+    }
+    tokenStore.set(data);
+    return true;
+  })().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
+// Access tokens last minutes. When one expires, refresh it and retry the request once.
+const pendingRetries = new Map<string, Request>();
 
 client.use({
-  onRequest({ request }) {
-    const token = tokenStore.get();
+  onRequest({ request, id }) {
+    const token = tokenStore.access();
     if (token) request.headers.set('Authorization', `Bearer ${token}`);
+    pendingRetries.set(id, request.clone());
     return request;
+  },
+  async onResponse({ response, id }) {
+    const retry = pendingRetries.get(id);
+    pendingRetries.delete(id);
+    if (response.status !== 401 || !retry || !(await refreshTokens())) return response;
+    retry.headers.set('Authorization', `Bearer ${tokenStore.access()}`);
+    return fetch(retry);
+  },
+  onError({ id }) {
+    pendingRetries.delete(id);
   },
 });
 
@@ -59,6 +107,7 @@ export const api = {
     unwrap(client.POST('/auth/register', { body: { username, email, password } })),
   login: (login: string, password: string) =>
     unwrap(client.POST('/auth/login', { body: { login, password } })),
+  logout: (refresh_token: string) => unwrap(client.POST('/auth/logout', { body: { refresh_token } })),
   me: () => unwrap(client.GET('/auth/me')),
   listTeams: () => unwrap(client.GET('/teams')),
   getTeam: (id: number) => unwrap(client.GET('/teams/{team_id}', { params: { path: { team_id: id } } })),

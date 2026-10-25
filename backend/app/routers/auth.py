@@ -1,12 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import or_, select
+from datetime import timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy import or_, select, update
 
 from app.config import settings
 from app.deps import DB, CurrentUser
-from app.models import User
+from app.models import RefreshToken, User, utcnow
 from app.rate_limit import RateLimiter
-from app.schemas import LoginRequest, Token, UserCreate, UserOut
-from app.security import create_access_token, hash_password, verify_password
+from app.schemas import LoginRequest, RefreshRequest, Token, UserCreate, UserOut
+from app.security import (
+    create_access_token,
+    hash_password,
+    hash_refresh_token,
+    new_refresh_token,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,6 +30,26 @@ def limit_login_attempts(request: Request) -> None:
             "Too many login attempts, try again later",
             headers={"Retry-After": str(login_limiter.retry_after(ip))},
         )
+
+
+def issue_tokens(db: DB, user_id: int) -> Token:
+    """Creates a short-lived access token and a stored, single-use refresh token."""
+    refresh_token = new_refresh_token()
+    db.add(RefreshToken(
+        user_id=user_id,
+        token_hash=hash_refresh_token(refresh_token),
+        expires_at=utcnow() + timedelta(days=settings.refresh_token_days),
+    ))
+    db.commit()
+    return Token(access_token=create_access_token(user_id), refresh_token=refresh_token)
+
+
+def revoke_all(db: DB, user_id: int) -> None:
+    db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=utcnow())
+    )
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -41,7 +69,37 @@ def login(data: LoginRequest, db: DB) -> Token:
     user = db.scalar(select(User).where(or_(User.username == data.login, User.email == data.login)))
     if user is None or not verify_password(data.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong username/email or password")
-    return Token(access_token=create_access_token(user.id))
+    return issue_tokens(db, user.id)
+
+
+@router.post("/refresh", response_model=Token)
+def refresh(data: RefreshRequest, db: DB) -> Token:
+    """Exchanges a refresh token for a new pair. The old refresh token stops working."""
+    invalid = HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired refresh token")
+    token = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(data.refresh_token)))
+    if token is None:
+        raise invalid
+    if token.revoked_at is not None:
+        # A used token came back: it may have been stolen, so end every session of this user.
+        revoke_all(db, token.user_id)
+        db.commit()
+        raise invalid
+    if token.expires_at <= utcnow():
+        raise invalid
+    token.revoked_at = utcnow()
+    return issue_tokens(db, token.user_id)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(data: RefreshRequest, db: DB) -> Response:
+    """Revokes a refresh token. Access tokens expire on their own within minutes."""
+    db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.token_hash == hash_refresh_token(data.refresh_token), RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=utcnow())
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me", response_model=UserOut)

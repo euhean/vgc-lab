@@ -6,7 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str
     jwt_secret: str
-    jwt_expire_minutes: int = 60 * 24
+    access_token_minutes: int = 15
+    refresh_token_days: int = 30
     cors_origins: list[str] = ["http://localhost:5173"]
     login_attempts_per_minute: int = 10
 
