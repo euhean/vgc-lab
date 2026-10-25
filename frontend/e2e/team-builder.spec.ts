@@ -16,7 +16,7 @@ Careful Nature
 - Fake Out
 - Flare Blitz`;
 
-test('sign up, build a team, save it and compare it', async ({ page }) => {
+test('sign up, build a team, save it, compare it and share it', async ({ page, browser }) => {
   const username = `trainer${Date.now()}`;
 
   await test.step('sign up', async () => {
@@ -66,5 +66,20 @@ test('sign up, build a team, save it and compare it', async ({ page }) => {
     await expect(page.locator('.speed-list li')).toHaveCount(6);
     await page.locator('.modal .tabs button', { hasText: 'Damage' }).click();
     await expect(page.locator('td.dmg').first()).toContainText('%');
+    await page.getByRole('button', { name: 'Close' }).click();
+  });
+
+  await test.step('a share link shows the team to logged-out visitors', async () => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.getByRole('button', { name: 'Create share link' }).click();
+    const link = await page.getByLabel('Share link').inputValue();
+
+    const visitor = await browser.newContext();
+    const visitorPage = await visitor.newPage();
+    await visitorPage.goto(link);
+    await expect(visitorPage.getByRole('heading', { name: 'Sun Offense' })).toBeVisible();
+    await expect(visitorPage.getByText(`Shared by ${username}`)).toBeVisible();
+    await expect(visitorPage.locator('.slot')).toHaveCount(3);
+    await visitor.close();
   });
 });

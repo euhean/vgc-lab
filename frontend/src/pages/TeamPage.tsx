@@ -4,7 +4,7 @@ import { api, type TeamRecord } from '../api/client';
 import ComparePanel from '../components/ComparePanel';
 import MonEditor from '../components/MonEditor';
 import Pokedex from '../components/Pokedex';
-import { Sprite } from '../components/Sprite';
+import SetCard from '../components/SetCard';
 import { DEFAULT_CONDITIONS, type Conditions } from '../lib/battle';
 import { exportTeam, MAX_TEAM_SIZE, newSet, parseTeam, type PokemonSet } from '../lib/team';
 
@@ -56,6 +56,24 @@ export default function TeamPage() {
     setStatus('Showdown paste copied to clipboard');
   };
 
+  const shareUrl = (shareId: string) => `${window.location.origin}/t/${shareId}`;
+
+  const share = async () => {
+    const shared = await api.shareTeam(id);
+    setRecord(shared);
+    await copyShareLink(shared.share_id!);
+  };
+
+  const copyShareLink = async (shareId: string) => {
+    await navigator.clipboard.writeText(shareUrl(shareId));
+    setStatus('Share link copied to clipboard');
+  };
+
+  const stopSharing = async () => {
+    setRecord(await api.unshareTeam(id));
+    setStatus('Share link removed');
+  };
+
   if (!record) return <p className="muted center">{status || 'Loading…'}</p>;
 
   return (
@@ -77,10 +95,7 @@ export default function TeamPage() {
           {Array.from({ length: MAX_TEAM_SIZE }, (_, i) => sets[i]).map((set, i) =>
             set ? (
               <button key={i} className="card slot" onClick={() => setEditing(i)}>
-                <Sprite species={set.species} shiny={set.shiny} size={80} />
-                <strong>{set.species}</strong>
-                <span className="muted small">{set.item || 'No item'} · {set.ability}</span>
-                <span className="small slot-moves">{set.moves.length ? set.moves.join(' / ') : 'No moves yet'}</span>
+                <SetCard set={set} />
               </button>
             ) : (
               <div key={i} className="card slot empty muted">Empty slot</div>
@@ -96,6 +111,25 @@ export default function TeamPage() {
             </select>
           </label>
           <button onClick={() => setComparing(true)} disabled={!opponent || sets.length === 0}>Compare teams</button>
+        </div>
+
+        <div className="card row between wrap">
+          {record.share_id ? (
+            <>
+              <label className="row inline grow">Share link
+                <input className="grow" readOnly value={shareUrl(record.share_id)} onFocus={(e) => e.target.select()} />
+              </label>
+              <div className="row">
+                <button className="ghost" onClick={() => copyShareLink(record.share_id!)}>Copy link</button>
+                <button className="ghost" onClick={stopSharing}>Stop sharing</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="muted small">Anyone with a share link can view this team without logging in.</span>
+              <button className="ghost" onClick={share}>Create share link</button>
+            </>
+          )}
         </div>
       </section>
 

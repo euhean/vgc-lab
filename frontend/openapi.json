@@ -404,6 +404,143 @@
         }
       }
     },
+    "/teams/{team_id}/share": {
+      "post": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Share Team",
+        "description": "Gives the team a public read-only link. Sharing an already shared team keeps its link.",
+        "operationId": "share_team_teams__team_id__share_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Unshare Team",
+        "description": "Removes the public link; the old link stops working.",
+        "operationId": "unshare_team_teams__team_id__share_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shared/{share_id}": {
+      "get": {
+        "tags": [
+          "shared"
+        ],
+        "summary": "Read Shared Team",
+        "description": "Public, no login needed: the team behind a share link.",
+        "operationId": "read_shared_team_shared__share_id__get",
+        "parameters": [
+          {
+            "name": "share_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Share Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedTeamOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -474,6 +611,41 @@
         ],
         "title": "RefreshRequest"
       },
+      "SharedTeamOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "paste": {
+            "type": "string",
+            "title": "Paste"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "paste",
+          "owner",
+          "updated_at"
+        ],
+        "title": "SharedTeamOut",
+        "description": "What anyone with a share link can see: no ids or emails."
+      },
       "TeamIn": {
         "properties": {
           "name": {
@@ -525,6 +697,17 @@
             "type": "integer",
             "title": "Id"
           },
+          "share_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Id"
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time",
@@ -535,6 +718,7 @@
         "required": [
           "name",
           "id",
+          "share_id",
           "updated_at"
         ],
         "title": "TeamOut"

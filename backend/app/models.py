@@ -48,6 +48,8 @@ class Team(Base):
     format: Mapped[str] = mapped_column(String(32), default="gen9vgc")
     # The team is stored in Pokémon Showdown's import/export text format.
     paste: Mapped[str] = mapped_column(Text, default="")
+    # Random public id for read-only share links; None while the team isn't shared.
+    share_id: Mapped[str | None] = mapped_column(String(16), unique=True, index=True, default=None)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, onupdate=utcnow)
 
     owner: Mapped[User] = relationship(back_populates="teams")

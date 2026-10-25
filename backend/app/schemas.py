@@ -42,4 +42,15 @@ class TeamOut(TeamIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    share_id: str | None
+    updated_at: datetime
+
+
+class SharedTeamOut(BaseModel):
+    """What anyone with a share link can see: no ids or emails."""
+
+    name: str
+    format: str
+    paste: str
+    owner: str
     updated_at: datetime

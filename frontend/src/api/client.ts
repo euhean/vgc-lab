@@ -35,6 +35,7 @@ export class ApiError extends Error {
 export type User = components['schemas']['UserOut'];
 export type TeamInput = components['schemas']['TeamIn'];
 export type TeamRecord = components['schemas']['TeamOut'];
+export type SharedTeam = components['schemas']['SharedTeamOut'];
 
 const client = createClient<paths>({ baseUrl: API_URL });
 // Used only to refresh tokens, so refreshing never goes through the retry middleware below.
@@ -115,4 +116,8 @@ export const api = {
   updateTeam: (id: number, team: TeamInput) =>
     unwrap(client.PUT('/teams/{team_id}', { params: { path: { team_id: id } }, body: team })),
   deleteTeam: (id: number) => unwrap(client.DELETE('/teams/{team_id}', { params: { path: { team_id: id } } })),
+  shareTeam: (id: number) => unwrap(client.POST('/teams/{team_id}/share', { params: { path: { team_id: id } } })),
+  unshareTeam: (id: number) => unwrap(client.DELETE('/teams/{team_id}/share', { params: { path: { team_id: id } } })),
+  getSharedTeam: (shareId: string) =>
+    unwrap(client.GET('/shared/{share_id}', { params: { path: { share_id: shareId } } })),
 };

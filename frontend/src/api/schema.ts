@@ -132,6 +132,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teams/{team_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Team
+         * @description Gives the team a public read-only link. Sharing an already shared team keeps its link.
+         */
+        post: operations["share_team_teams__team_id__share_post"];
+        /**
+         * Unshare Team
+         * @description Removes the public link; the old link stops working.
+         */
+        delete: operations["unshare_team_teams__team_id__share_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shared/{share_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Shared Team
+         * @description Public, no login needed: the team behind a share link.
+         */
+        get: operations["read_shared_team_shared__share_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -173,6 +217,25 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /**
+         * SharedTeamOut
+         * @description What anyone with a share link can see: no ids or emails.
+         */
+        SharedTeamOut: {
+            /** Name */
+            name: string;
+            /** Format */
+            format: string;
+            /** Paste */
+            paste: string;
+            /** Owner */
+            owner: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** TeamIn */
         TeamIn: {
             /** Name */
@@ -204,6 +267,8 @@ export interface components {
             paste: string;
             /** Id */
             id: number;
+            /** Share Id */
+            share_id: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -551,6 +616,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_team_teams__team_id__share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unshare_team_teams__team_id__share_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_shared_team_shared__share_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedTeamOut"];
+                };
             };
             /** @description Validation Error */
             422: {

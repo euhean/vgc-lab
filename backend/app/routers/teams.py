@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 
@@ -49,3 +51,24 @@ def delete_team(team_id: int, db: DB, user: CurrentUser) -> Response:
     db.delete(get_own_team(db, user, team_id))
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{team_id}/share", response_model=TeamOut)
+def share_team(team_id: int, db: DB, user: CurrentUser) -> Team:
+    """Gives the team a public read-only link. Sharing an already shared team keeps its link."""
+    team = get_own_team(db, user, team_id)
+    if team.share_id is None:
+        team.share_id = secrets.token_urlsafe(8)
+        db.commit()
+        db.refresh(team)
+    return team
+
+
+@router.delete("/{team_id}/share", response_model=TeamOut)
+def unshare_team(team_id: int, db: DB, user: CurrentUser) -> Team:
+    """Removes the public link; the old link stops working."""
+    team = get_own_team(db, user, team_id)
+    team.share_id = None
+    db.commit()
+    db.refresh(team)
+    return team
