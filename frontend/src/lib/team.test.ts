@@ -52,3 +52,11 @@ describe('EVs and IVs', () => {
     expect(setIv(evs, 'spe', 40).spe).toBe(31);
   });
 });
+
+describe('species in a paste', () => {
+  it('lists species without loading the Pokédex', async () => {
+    const { speciesInPaste } = await import('./paste');
+    expect(speciesInPaste(PASTE)).toEqual(['Incineroar']);
+    expect(speciesInPaste('')).toEqual([]);
+  });
+});

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type TeamRecord } from '../api/client';
 import { Icon } from '../components/Sprite';
-import { exportTeam, parseTeam } from '../lib/team';
+import { speciesInPaste } from '../lib/paste';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -20,7 +20,9 @@ export default function HomePage() {
     e.preventDefault();
     setError('');
     try {
-      // Parsing first rejects invalid pastes before anything is saved.
+      // Parsing first rejects invalid pastes before anything is saved. The Pokédex data
+      // needed for that is loaded here, on demand, instead of with the home page.
+      const { exportTeam, parseTeam } = await import('../lib/team');
       const normalized = exportTeam(parseTeam(paste));
       const team = await api.createTeam({ name: name.trim(), format: 'gen9vgc', paste: normalized });
       navigate(`/teams/${team.id}`);
@@ -62,7 +64,7 @@ export default function HomePage() {
               <Link to={`/teams/${team.id}`} className="team-link">
                 <strong>{team.name}</strong>
                 <div className="icons">
-                  {parseTeam(team.paste).map((set, i) => <Icon key={i} species={set.species} />)}
+                  {speciesInPaste(team.paste).map((species, i) => <Icon key={i} species={species} />)}
                 </div>
                 <span className="muted small">Edited {new Date(team.updated_at).toLocaleString()}</span>
               </Link>
