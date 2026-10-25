@@ -9,7 +9,8 @@ other teams: speed order, damage between every move and every target, and type m
 
 ## Features
 
-- **Accounts**: sign up with username, email and password; log in with JWT.
+- **Accounts**: sign up with username, email and password. Short-lived JWT access tokens with
+  rotating refresh tokens, and rate-limited login.
 - **Teams**: create, rename, edit and delete teams. Teams are stored in Pokémon Showdown's
   text format, so they reload exactly as you left them and can be imported from or exported
   to Showdown.
@@ -24,6 +25,8 @@ other teams: speed order, damage between every move and every target, and type m
   - Speed: turn order for both teams.
   - Damage: every damaging move against every opposing Pokémon.
   - Types: weakness and resistance chart for both teams.
+- **Share links**: publish a read-only link to a team that anyone can open without an account,
+  copy as a Showdown paste or save to their own teams.
 
 ## Tech stack
 
@@ -116,6 +119,16 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
 - **No Web Worker for the damage table.** A full 6v6 table is up to 144 calcs. Measured at
   13–36 ms, so it is memoized instead of moved to a worker, which would have duplicated the
   Pokédex data in a second bundle.
+- **Short access tokens, rotating refresh tokens.** Access tokens last 15 minutes, so a leaked
+  one is useful only briefly. Refresh tokens are single-use and stored as SHA-256 hashes; if an
+  already used one comes back, every session of that user is revoked, since it may have been
+  stolen. They're kept in the browser's storage rather than an httpOnly cookie because the
+  frontend and API live on different domains, where cross-site cookies are unreliable.
+- **Login rate limit in memory.** Ten attempts per minute per IP, kept in the API process. That
+  fits the single instance this runs on; several instances would need a shared store like Redis.
+- **Team pages load on demand.** The Pokédex and calc data are several megabytes, so only the
+  team pages load them. The first download went from 2.8 MB (612 KB gzipped) to 436 KB
+  (137 KB gzipped).
 - **One API, one database.** Splitting into services would add deployment and coordination work
   with no benefit at this size.
 
@@ -124,13 +137,18 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
 | Method | Path | Description |
 | --- | --- | --- |
 | POST | `/auth/register` | Create an account |
-| POST | `/auth/login` | Log in with username or email, returns a JWT |
+| POST | `/auth/login` | Log in with username or email; returns an access and a refresh token |
+| POST | `/auth/refresh` | Swap a refresh token for a new pair (the old one is revoked) |
+| POST | `/auth/logout` | Revoke a refresh token |
 | GET | `/auth/me` | Current user |
 | GET | `/teams` | List your teams |
 | POST | `/teams` | Create a team |
 | GET | `/teams/{id}` | Get one of your teams |
 | PUT | `/teams/{id}` | Update one of your teams |
 | DELETE | `/teams/{id}` | Delete one of your teams |
+| POST | `/teams/{id}/share` | Create a public share link for one of your teams |
+| DELETE | `/teams/{id}/share` | Remove the share link |
+| GET | `/shared/{share_id}` | View a shared team (no login needed) |
 
 ## Roadmap
 
