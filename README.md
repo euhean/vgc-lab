@@ -1,6 +1,6 @@
 # VGC Lab
 
-**Live demo:** https://vgc-lab.vercel.app
+**Live demo:** https://vgc-lab-taupe.vercel.app
 (The API sleeps when idle on the free tier; the first request can take up to a minute.)
 
 A team builder and damage calculator for Pokémon VGC (Scarlet/Violet, doubles at level 50).
@@ -124,7 +124,8 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
   already used one comes back, every session of that user is revoked, since it may have been
   stolen. They're kept in the browser's storage rather than an httpOnly cookie because the
   frontend and API live on different domains, where cross-site cookies are unreliable.
-- **Login rate limit in memory.** Ten attempts per minute per IP, kept in the API process. That
+- **Login rate limit in memory.** Ten failed attempts per minute per IP, kept in the API process.
+  Successful logins don't count, so retrying a correct password never locks anyone out. That
   fits the single instance this runs on; several instances would need a shared store like Redis.
 - **Team pages load on demand.** The Pokédex and calc data are several megabytes, so only the
   team pages load them. The first download went from 2.8 MB (612 KB gzipped) to 436 KB
