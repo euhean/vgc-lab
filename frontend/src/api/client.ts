@@ -110,6 +110,7 @@ export const api = {
     unwrap(client.POST('/auth/login', { body: { login, password } })),
   logout: (refresh_token: string) => unwrap(client.POST('/auth/logout', { body: { refresh_token } })),
   me: () => unwrap(client.GET('/auth/me')),
+  health: () => unwrap(client.GET('/health')),
   listTeams: () => unwrap(client.GET('/teams')),
   getTeam: (id: number) => unwrap(client.GET('/teams/{team_id}', { params: { path: { team_id: id } } })),
   createTeam: (team: TeamInput) => unwrap(client.POST('/teams', { body: team })),
