@@ -52,6 +52,7 @@
           "auth"
         ],
         "summary": "Login",
+        "description": "Slows down password guessing: after too many failed attempts from one IP, answers 429.\n\nOnly failed attempts count, so retrying a correct login never locks anyone out.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {

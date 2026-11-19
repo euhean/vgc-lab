@@ -30,7 +30,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
+        /**
+         * Login
+         * @description Slows down password guessing: after too many failed attempts from one IP, answers 429.
+         *
+         *     Only failed attempts count, so retrying a correct login never locks anyone out.
+         */
         post: operations["login_auth_login_post"];
         delete?: never;
         options?: never;

@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import or_, select, update
 
 from app.config import settings
@@ -18,18 +18,11 @@ from app.security import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-login_limiter = RateLimiter(limit=settings.login_attempts_per_minute, window=60)
+login_limiter = RateLimiter(limit=settings.failed_logins_per_minute, window=60)
 
 
-def limit_login_attempts(request: Request) -> None:
-    """Slows down password guessing: too many login attempts from one IP get a 429."""
-    ip = request.client.host if request.client else "unknown"
-    if not login_limiter.hit(ip):
-        raise HTTPException(
-            status.HTTP_429_TOO_MANY_REQUESTS,
-            "Too many login attempts, try again later",
-            headers={"Retry-After": str(login_limiter.retry_after(ip))},
-        )
+def client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 def issue_tokens(db: DB, user_id: int) -> Token:
@@ -64,10 +57,22 @@ def register(data: UserCreate, db: DB) -> User:
     return user
 
 
-@router.post("/login", response_model=Token, dependencies=[Depends(limit_login_attempts)])
-def login(data: LoginRequest, db: DB) -> Token:
+@router.post("/login", response_model=Token)
+def login(data: LoginRequest, db: DB, request: Request) -> Token:
+    """Slows down password guessing: after too many failed attempts from one IP, answers 429.
+
+    Only failed attempts count, so retrying a correct login never locks anyone out.
+    """
+    ip = client_ip(request)
+    if login_limiter.blocked(ip):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "Too many failed login attempts, try again later",
+            headers={"Retry-After": str(login_limiter.retry_after(ip))},
+        )
     user = db.scalar(select(User).where(or_(User.username == data.login, User.email == data.login)))
     if user is None or not verify_password(data.password, user.password_hash):
+        login_limiter.record(ip)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong username/email or password")
     return issue_tokens(db, user.id)
 

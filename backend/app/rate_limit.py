@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 
 class RateLimiter:
-    """Allows at most `limit` hits per key within a sliding window of `window` seconds.
+    """Allows at most `limit` recorded events per key within a sliding window of `window` seconds.
 
     State is kept in memory, which fits a single API instance. Several instances
     would need a shared store such as Redis.
@@ -14,22 +14,24 @@ class RateLimiter:
         self.limit = limit
         self.window = window
         self.clock = clock
-        self.hits: dict[str, deque[float]] = {}
+        self.events: dict[str, deque[float]] = {}
 
-    def hit(self, key: str) -> bool:
-        """Records a hit and returns whether it is within the limit."""
-        now = self.clock()
-        hits = self.hits.setdefault(key, deque())
-        while hits and hits[0] <= now - self.window:
-            hits.popleft()
-        if len(hits) >= self.limit:
-            return False
-        hits.append(now)
-        return True
+    def _recent(self, key: str) -> deque[float]:
+        events = self.events.setdefault(key, deque())
+        while events and events[0] <= self.clock() - self.window:
+            events.popleft()
+        return events
+
+    def blocked(self, key: str) -> bool:
+        """Whether this key has reached the limit, without recording anything."""
+        return len(self._recent(key)) >= self.limit
+
+    def record(self, key: str) -> None:
+        self._recent(key).append(self.clock())
 
     def retry_after(self, key: str) -> int:
-        """Seconds until the oldest hit for this key leaves the window."""
-        return max(1, int(self.hits[key][0] + self.window - self.clock()) + 1)
+        """Seconds until the oldest event for this key leaves the window."""
+        return max(1, int(self.events[key][0] + self.window - self.clock()) + 1)
 
     def clear(self) -> None:
-        self.hits.clear()
+        self.events.clear()
