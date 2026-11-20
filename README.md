@@ -139,14 +139,96 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
 - **Team pages load on demand.** The Pokédex and calc data are several megabytes, so only the
   team pages load them. The first download went from 2.8 MB (612 KB gzipped) to 436 KB
   (137 KB gzipped).
-- **How the EV optimizer searches.** At level 50 a stat point costs 8 EVs (4 for the first), so
-  only the 33 EV values that raise a stat are tried. Speed and offence each depend on one stat,
-  so the cheapest value is found directly. Defensive benchmarks share HP: for every HP value, a
-  binary search finds the cheapest Def and SpD that pass (survival only improves with bulk), and
-  the split with the fewest total EVs wins. KO odds come from the exact distribution of the 16
-  damage rolls, convolved across the hits of multi-hit moves and across two attacks.
+- **The EV optimizer finds the exact minimum, not an approximation.** See
+  [How the EV optimizer works](#how-the-ev-optimizer-works).
 - **One API, one database.** Splitting into services would add deployment and coordination work
   with no benefit at this size.
+
+## How the EV optimizer works
+
+The optimizer (`frontend/src/lib/optimizer.ts`) finds the spread with the fewest EVs that meets
+every benchmark. Trying every spread is out of reach (33⁶ ≈ 1.3 billion, each needing damage
+calcs), so it relies on how stats work.
+
+**Only 33 EV values per stat matter.** At level 50 a stat point costs 8 EVs (4 for the first),
+so the values in between are wasted. Instead of hard-coding 0, 4, 12 … 252, it keeps the values
+where the stat changes, which also handles other IVs and levels:
+
+```ts
+for (let ev = 0; ev <= MAX_STAT_EVS; ev += 4) {
+  const value = calcStat(calcGen, stat, base, set.ivs[stat], ev, set.level, set.nature);
+  if (value !== last) out.push(ev);
+  last = value;
+}
+```
+
+**Damage is a probability distribution.** A calc returns 16 equally likely rolls, and benchmarks
+such as "survive 15 of 16" or "guaranteed 2HKO" are questions about probability. The hits of a
+multi-hit move roll independently, so their distributions are convolved into the distribution of
+the total. Adding the minimum and maximum rolls would give the range but not how likely each
+total is:
+
+```ts
+function convolve(a: Distribution, b: Distribution): Distribution {
+  const out: Distribution = new Map();
+  for (const [x, px] of a) {
+    for (const [y, py] of b) out.set(x + y, (out.get(x + y) ?? 0) + px * py);
+  }
+  return out;
+}
+```
+
+**Two attacks are not simply added together.** A Sitrus Berry heals a quarter of max HP once HP
+falls to half or less, so the second hit's threshold depends on the first roll. `koChance` goes
+through each first roll, applies the berry if it activates, and counts the second rolls that
+still KO. Focus Sash and Sturdy leave 1 HP after a single hit from full HP, but not against
+multi-hit moves:
+
+```ts
+let left = Math.max(1, hp - first);
+if (traits.sitrus && left <= hp / 2) left += Math.floor(hp / 4);
+for (const [second, p2] of dist) if (second >= left) p += p1 * p2;
+```
+
+With two hits, "15 of 16 rolls" means at least 15/16 of the 256 roll pairs, not one excluded
+roll per hit.
+
+**The search runs in three phases**, because only the bulk benchmarks share a stat:
+
+1. **Speed** depends only on Spe. The first useful value that passes is the cheapest, since more
+   EVs never make a Pokémon slower. A tie fails, so outspeeding means creeping by one point. For
+   Trick Room, the Speed IV is lowered when 0 EVs are not slow enough.
+2. **Offence** depends only on the attacking stat (Atk, SpA, or Def for Body Press). More of it
+   never deals less damage, so a binary search finds the cheapest value. A Body Press result
+   becomes the minimum Def for the next phase.
+3. **Bulk** shares HP between physical and special benchmarks, and more HP can save more or fewer
+   Def EVs than it costs, so every HP value is tried. With HP fixed, Def and SpD are independent
+   (a move hits one or the other), and survival only improves with bulk, so a binary search finds
+   the cheapest of each. The cheapest total wins; among equal totals, the one with the highest
+   HP×Def + HP×SpD:
+
+```ts
+for (const hp of usefulEvs(current, 'hp')) {
+  // for Def and SpD: the first value that passes, at or above the Body Press minimum
+  const i = firstPassing(evs, (ev) => allPass(withEvs(spread, { [stat]: ev }), statGoals));
+  ...
+  if (!best || total < best.total || (total === best.total && bulk > best.bulk)) best = { ... };
+}
+```
+
+That is about 400 damage-calc rounds instead of 33³ ≈ 36,000 for every HP / Def / SpD
+combination, with the same result. The three phases only interact through the Body Press
+minimum, so minimising each one minimises the whole spread. The tests check this: one stat point
+less in any invested stat fails a benchmark.
+
+Leftover EVs then go to the stats in the order chosen, never into Speed when a Trick Room
+benchmark needs it low. With "Compare every nature", the search runs once per nature and the
+results are sorted by EV cost. Neutral natures are skipped, since one that lowers an unused stat
+is never worse.
+
+**Not modelled yet:** HP-number rules (Sitrus multiples of 4, Life Orb recoil, sandstorm), residual
+damage and healing, a Sitrus Berry activating in the middle of a multi-hit move, moves that pick
+their category in battle (Shell Side Arm), and Foul Play, which uses the target's Attack.
 
 ## API
 

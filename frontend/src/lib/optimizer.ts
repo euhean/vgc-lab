@@ -40,7 +40,11 @@ export interface SurviveGoal {
   attackerStage: number;
   /** The attacker was hit by Intimidate; its ability decides what that does (see intimidateEffect). */
   intimidated: boolean;
-  /** Share of damage rolls that must be survived: 1 = every roll, 15/16 = all but the highest. */
+  /**
+   * Minimum probability of surviving, over every combination of damage rolls: 1 = always,
+   * 15/16 = at least 93.75% of outcomes. With one hit, 15/16 means every roll but the highest;
+   * with two hits it is a share of the 256 roll pairs, not one excluded roll per hit.
+   */
   minChance: number;
 }
 
@@ -50,6 +54,7 @@ export interface KoGoal {
   move: string;
   /** KO within this many hits. */
   hits: 1 | 2;
+  /** Minimum probability of the KO over every combination of damage rolls, as in SurviveGoal. */
   minChance: number;
 }
 
