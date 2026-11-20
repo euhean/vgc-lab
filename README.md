@@ -39,6 +39,11 @@ other teams: speed order, damage between every move and every target, and type m
   and matched against every member of your team: how hard it hits, how hard you hit back and
   who moves first. The top six can become an opponent team in one click, ready for the
   comparison panel and the EV optimizer.
+- **Battles against an AI**: play one of your teams against another, turn by turn, with team
+  preview, targets, Terastallization and switches, while an AI plays the opponent. Battles run
+  in Pokémon Showdown's own simulator on the server and stream to the browser over a WebSocket.
+- **Win rates**: the AI plays both sides 50 to 500 times and the app reports the win rate with a
+  95% confidence interval (Monte Carlo simulation).
 - **Share links**: publish a read-only link to a team that anyone can open without an account,
   copy as a Showdown paste or save to their own teams.
 
@@ -51,13 +56,15 @@ other teams: speed order, damage between every move and every target, and type m
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2, Pydantic, Alembic |
 | Database | PostgreSQL |
 | Data pipeline | Python ETL run monthly by a scheduled GitHub Actions workflow |
+| Battle simulator | [@pkmn/sim](https://github.com/pkmn/ps) on Node.js, streamed over WebSockets; @pkmn/client and @pkmn/view in the browser |
 | Auth | JWT (PyJWT) with bcrypt password hashing |
 | API contract | OpenAPI schema → TypeScript types (openapi-typescript, openapi-fetch) |
 | Tests | pytest (API and migrations), Vitest (calc and team logic), Playwright (end to end) |
 | DevOps | Docker, Docker Compose, GitHub Actions |
 
-All Pokémon calculations run in the browser, where the Showdown libraries live. The API handles
-accounts, team storage and the usage statistics loaded by the data pipeline.
+Damage, speed and EV calculations run in the browser, where the Showdown libraries live. The API
+handles accounts, team storage, the usage statistics loaded by the data pipeline, and battles,
+which it runs in Node.js child processes.
 
 ```
 frontend/            React app
@@ -69,6 +76,8 @@ frontend/            React app
 backend/             FastAPI app
   app/routers/       /auth, /teams, /shared and /meta endpoints
   app/usage_stats.py Usage statistics pipeline (Smogon → PostgreSQL)
+  app/simulator.py   Starts and talks to the battle simulator processes
+  sim/               Battle simulator in Node.js: heuristic AI, live battles, win rates
   migrations/        Alembic database migrations
   tests/             API and migration tests
 ```
@@ -90,6 +99,7 @@ Requirements: Python 3.13, Node 22 and a PostgreSQL database.
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
+(cd sim && npm install)       # the battle simulator
 cp .env.example .env          # set DATABASE_URL and JWT_SECRET
 alembic upgrade head          # create or update the database tables
 uvicorn app.main:app --reload
@@ -104,7 +114,8 @@ npm run dev
 ## Tests
 
 ```bash
-cd backend && pytest              # API and migrations
+cd backend && pytest              # API, migrations and battle endpoints
+cd backend/sim && npm test        # battle simulator and AI
 cd frontend && npm test           # calc and team logic
 cd frontend && npm run test:e2e   # full flow in a browser; needs the app running (docker compose up)
 ```
@@ -156,6 +167,66 @@ score: (p.usage * (hitsYou - youHit)) / 100,
 Ranking 30 threats against a full team takes about 1,400 damage calcs, a few hundred
 milliseconds, and runs once per report.
 
+## Battle simulator
+
+Battles run in [`@pkmn/sim`](https://github.com/pkmn/ps), Pokémon Showdown's simulator, which is a
+JavaScript library. The API is Python, so it starts the simulator as Node.js child processes and
+talks to them over pipes, one JSON message per line (`backend/app/simulator.py`):
+
+- **Live battles** share one long-lived process (`sim/live.mjs`). Each message carries a battle
+  id, and a reader task routes it to that battle's queue.
+- **Win rates** start a short-lived process per request (`sim/simulate.mjs`). They are CPU bound,
+  so running them apart keeps live battles responsive, and a semaphore limits how many run at once.
+
+### Live battles over WebSockets
+
+`/battles/live` relays a battle between the browser and the simulator. Browsers can't send an
+`Authorization` header when opening a WebSocket, so the first message authenticates, and the
+connection closes with code 4401 when the token is invalid:
+
+```
+→ {"token": "<access token>", "team_id": 1, "opponent_team_id": 2}
+← {"type": "chunk", "data": "|request|{...}"}       Showdown protocol, from your side
+→ {"type": "choose", "choice": "move 1 2, move 3"}
+← {"type": "end", "winner": "p1"}
+```
+
+Closing the connection forfeits the battle. In the browser, `@pkmn/client` tracks the battle state
+from the protocol, `@pkmn/view` writes the readable log and builds valid choices.
+
+### The AI
+
+The AI (`sim/ai.mjs`) is a heuristic, simple enough to explain in a few lines. Every turn, each
+active Pokémon scores each move against each target and uses the best one:
+
+```js
+// Estimated share of the target's remaining HP: the damage formula with base power, stats and
+// stat stages, STAB, type effectiveness and accuracy.
+const base = Math.floor(Math.floor((Math.floor((2 * level) / 5 + 2) * power * attack) / defense) / 50) + 2;
+return Math.min(1, (base * stab * effectiveness * accuracy) / target.hp);
+```
+
+Spread moves add up every foe they hit, minus the damage to the ally. Fake Out is used on the
+first turn out, Tailwind when the side has none, Trick Room when the side is slower, sleep and
+status moves on healthy targets, and Protect now and then, never twice in a row. It
+terastallizes when its best move matches its Tera type and never switches by choice. It reads
+the battle state directly, so it knows the opponent's sets. It wins 97% of games against
+Showdown's random player, and about half of a mirror match.
+
+### Win rates
+
+`POST /battles/simulate` plays up to 500 games with the AI on both sides, about 20 ms each, and
+returns the win rate with a 95% Wilson score interval. The Wilson interval stays between 0% and
+100% and stays accurate for lopsided matchups, where the usual normal approximation doesn't:
+
+```python
+centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+```
+
+Each battle's seed is drawn from one starting seed, so a run with a fixed seed is reproducible,
+which the tests rely on.
+
 ## Changing the database or the API
 
 - **Database:** after changing a model in `backend/app/models.py`, create a migration with
@@ -198,6 +269,9 @@ milliseconds, and runs once per report.
   don't need to know how Smogon weights its counts.
 - **Scheduled job in GitHub Actions.** The data changes once a month, so a scheduled workflow is
   enough; a worker or a queue would add infrastructure with nothing to do most of the time.
+- **The simulator runs in child processes, not a separate service.** Pokémon Showdown's
+  simulator only exists in JavaScript. Running it as child processes of the API keeps one
+  deployment and one place for authentication; the cost is Node in the API's Docker image.
 - **One API, one database.** Splitting into services would add deployment and coordination work
   with no benefit at this size.
 
@@ -307,7 +381,7 @@ their category in battle (Shell Side Arm), and Foul Play, which uses the target'
 
 ## Roadmap
 
-- Turn-by-turn battle simulation with `@pkmn/sim`.
+- A stronger AI that switches and predicts, for more realistic win rates.
 - Pokémon Champions mechanics (stat points instead of EVs and IVs).
 
 ## License
