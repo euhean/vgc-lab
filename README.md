@@ -34,6 +34,11 @@ other teams: speed order, damage between every move and every target, and type m
   - Speed: turn order for both teams.
   - Damage: every damaging move against every opposing Pokémon.
   - Types: weakness and resistance chart for both teams.
+- **Meta threats**: the most used Pokémon of a format, from Smogon's monthly usage statistics,
+  ranked by how much trouble they give your team. Each one is built with its most common set
+  and matched against every member of your team: how hard it hits, how hard you hit back and
+  who moves first. The top six can become an opponent team in one click, ready for the
+  comparison panel and the EV optimizer.
 - **Share links**: publish a read-only link to a team that anyone can open without an account,
   copy as a Showdown paste or save to their own teams.
 
@@ -45,13 +50,14 @@ other teams: speed order, damage between every move and every target, and type m
 | Pokémon logic | [@smogon/calc](https://github.com/smogon/damage-calc), [@pkmn/data and @pkmn/dex](https://github.com/pkmn/ps), @pkmn/sets, @pkmn/img |
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2, Pydantic, Alembic |
 | Database | PostgreSQL |
+| Data pipeline | Python ETL run monthly by a scheduled GitHub Actions workflow |
 | Auth | JWT (PyJWT) with bcrypt password hashing |
 | API contract | OpenAPI schema → TypeScript types (openapi-typescript, openapi-fetch) |
 | Tests | pytest (API and migrations), Vitest (calc and team logic), Playwright (end to end) |
 | DevOps | Docker, Docker Compose, GitHub Actions |
 
-All Pokémon calculations run in the browser, where the Showdown libraries live. The API only
-handles accounts and team storage.
+All Pokémon calculations run in the browser, where the Showdown libraries live. The API handles
+accounts, team storage and the usage statistics loaded by the data pipeline.
 
 ```
 frontend/            React app
@@ -61,7 +67,8 @@ frontend/            React app
   src/pages/         Login, home and team pages
   e2e/               Playwright end-to-end test
 backend/             FastAPI app
-  app/routers/       /auth and /teams endpoints
+  app/routers/       /auth, /teams, /shared and /meta endpoints
+  app/usage_stats.py Usage statistics pipeline (Smogon → PostgreSQL)
   migrations/        Alembic database migrations
   tests/             API and migration tests
 ```
@@ -105,6 +112,50 @@ cd frontend && npm run test:e2e   # full flow in a browser; needs the app runnin
 GitHub Actions runs on every push: the backend and frontend tests, the linter, the production
 build, the end-to-end test against the Docker Compose stack, and an API contract check.
 
+## Usage statistics pipeline
+
+The meta threat finder reads Smogon's monthly usage statistics from the database. A pipeline
+in `backend/app/usage_stats.py` loads them, in three steps kept as separate functions:
+
+1. **Extract**: find the newest month with a report for the format and download its "chaos"
+   JSON (Smogon has served it both plain and gzipped, so both are read).
+2. **Transform**: the report holds rating-weighted counts, not shares. Every set has exactly one
+   ability, so a Pokémon's ability weights add up to its total, which turns every move, item,
+   spread and Tera type weight into the share of its sets that have it. The 100 most used
+   Pokémon are kept, with their most common entries; empty move slots are dropped.
+3. **Load**: replace that month's report in one transaction. Loading the same month twice gives
+   the same result, so the job can be rerun safely.
+
+```python
+def transform(chaos: dict[str, Any]) -> Report:
+    ...
+    total = sum(entry["Abilities"].values())
+    sets = {key: top(weights, total, KEEP[key], EMPTY.get(key)) for key, weights in lists.items()}
+```
+
+A scheduled GitHub Actions workflow (`.github/workflows/usage-stats.yml`) runs it a few times
+early each month, when Smogon publishes the previous month, for the last two Scarlet/Violet
+regulations (Reg G and Reg I). It needs the production database URL as a repository secret
+named `DATABASE_URL`, and can also be started by hand from the Actions tab.
+
+```bash
+cd backend
+python -m app.usage_stats --format gen9vgc2024regg --rating 1630      # download and load
+python -m app.usage_stats --format gen9vgc2024regg --month 2026-10 \
+  --file tests/fixtures/chaos-gen9vgc2024regg-1630.json               # load a file offline
+```
+
+The API serves the loaded reports at `GET /meta/reports` and `GET /meta/reports/{id}`. The
+threat ranking itself runs in the browser (`frontend/src/lib/meta.ts`), next to the damage calc:
+
+```ts
+// threat score = usage × (average damage it deals − average damage it takes) / 100
+score: (p.usage * (hitsYou - youHit)) / 100,
+```
+
+Ranking 30 threats against a full team takes about 1,400 damage calcs, a few hundred
+milliseconds, and runs once per report.
+
 ## Changing the database or the API
 
 - **Database:** after changing a model in `backend/app/models.py`, create a migration with
@@ -141,6 +192,12 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
   (137 KB gzipped).
 - **The EV optimizer finds the exact minimum, not an approximation.** See
   [How the EV optimizer works](#how-the-ev-optimizer-works).
+- **The pipeline stores data; the browser ranks threats.** Threat ranking needs the damage calc,
+  which lives in the frontend, and depends on the team being edited, so the API only serves
+  the usage data. Each report is stored once, as shares rather than raw weights, so readers
+  don't need to know how Smogon weights its counts.
+- **Scheduled job in GitHub Actions.** The data changes once a month, so a scheduled workflow is
+  enough; a worker or a queue would add infrastructure with nothing to do most of the time.
 - **One API, one database.** Splitting into services would add deployment and coordination work
   with no benefit at this size.
 
