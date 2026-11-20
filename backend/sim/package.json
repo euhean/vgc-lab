@@ -1,0 +1,13 @@
+{
+  "name": "vgc-lab-sim",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Battle simulator processes started by the API: live battles and Monte Carlo win rates.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@pkmn/sim": "0.11.0"
+  }
+}
