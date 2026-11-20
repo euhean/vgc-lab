@@ -169,3 +169,15 @@ button.slot:hover { border-color: var(--muted); }
   .form-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: auto; }
 }
+
+/* Meta threats */
+.threats td, .threats th { text-align: right; }
+.threats th:first-child, .threats tbody th { text-align: left; }
+.threats tr.clickable { cursor: pointer; }
+.threats tr.clickable:hover { background: var(--raised); }
+.threats .threat-high { color: var(--white); font-weight: 600; }
+.threats tr.detail td { text-align: left; white-space: normal; background: var(--raised); }
+.threat-detail { display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+.threat-detail pre { margin: 0; font-family: 'JetBrains Mono', monospace; }
+.threat-detail ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 700px) { .threat-detail { grid-template-columns: 1fr; } }

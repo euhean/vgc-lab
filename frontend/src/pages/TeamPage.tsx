@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, type TeamRecord } from '../api/client';
 import ComparePanel from '../components/ComparePanel';
+import MetaThreats from '../components/MetaThreats';
 import MonEditor from '../components/MonEditor';
 import Pokedex from '../components/Pokedex';
 import SetCard from '../components/SetCard';
@@ -19,6 +20,7 @@ export default function TeamPage() {
   const [opponentId, setOpponentId] = useState<number | null>(null);
   const [conditions, setConditions] = useState<Conditions>(DEFAULT_CONDITIONS);
   const [comparing, setComparing] = useState(false);
+  const [threats, setThreats] = useState(false);
   const [status, setStatus] = useState('');
 
   useEffect(() => {
@@ -110,7 +112,10 @@ export default function TeamPage() {
               {allTeams.map((t) => <option key={t.id} value={t.id}>{t.name}{t.id === id ? ' (this team)' : ''}</option>)}
             </select>
           </label>
-          <button onClick={() => setComparing(true)} disabled={!opponent || sets.length === 0}>Compare teams</button>
+          <div className="row">
+            <button className="ghost" onClick={() => setThreats(true)} disabled={sets.length === 0}>Meta threats</button>
+            <button onClick={() => setComparing(true)} disabled={!opponent || sets.length === 0}>Compare teams</button>
+          </div>
         </div>
 
         <div className="card row between wrap">
@@ -143,6 +148,15 @@ export default function TeamPage() {
           onChange={(set) => change(sets.map((s, i) => (i === editing ? set : s)))}
           onRemove={() => { change(sets.filter((_, i) => i !== editing)); setEditing(null); }}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {threats && (
+        <MetaThreats
+          team={sets}
+          conditions={conditions}
+          onOpponentCreated={(team) => { setAllTeams((ts) => [team, ...ts]); setOpponentId(team.id); }}
+          onClose={() => setThreats(false)}
         />
       )}
 

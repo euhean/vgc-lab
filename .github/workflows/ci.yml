@@ -68,6 +68,10 @@ jobs:
       - run: docker compose up -d --build
       - name: Wait for the API
         run: timeout 60 bash -c 'until curl -sf http://localhost:8000/health; do sleep 2; done'
+      - name: Load a usage report for the meta threats test
+        run: >
+          docker compose exec -T api python -m app.usage_stats --format gen9vgc2024regg --month 2026-10 --file -
+          < backend/tests/fixtures/chaos-gen9vgc2024regg-1630.json
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -121,4 +121,7 @@ export const api = {
   unshareTeam: (id: number) => unwrap(client.DELETE('/teams/{team_id}/share', { params: { path: { team_id: id } } })),
   getSharedTeam: (shareId: string) =>
     unwrap(client.GET('/shared/{share_id}', { params: { path: { share_id: shareId } } })),
+  listUsageReports: () => unwrap(client.GET('/meta/reports')),
+  getUsageReport: (id: number, limit: number) =>
+    unwrap(client.GET('/meta/reports/{report_id}', { params: { path: { report_id: id }, query: { limit } } })),
 };
