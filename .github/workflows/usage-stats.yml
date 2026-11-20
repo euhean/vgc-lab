@@ -1,0 +1,29 @@
+name: Usage stats
+
+# Loads Smogon's monthly usage statistics into the production database.
+# Smogon publishes the previous month's statistics in the first days of each month, so the job
+# runs a few times early in the month; loading a month again replaces it, so reruns are safe.
+on:
+  schedule:
+    - cron: "37 4 2,5,9 * *"
+  workflow_dispatch:
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # The app's settings require a JWT secret; the loader never signs tokens.
+      JWT_SECRET: not-used-by-the-usage-loader
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python -m app.usage_stats --format gen9vgc2024regg --format gen9vgc2025regi --rating 1630

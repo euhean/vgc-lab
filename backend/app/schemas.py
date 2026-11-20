@@ -54,3 +54,34 @@ class SharedTeamOut(BaseModel):
     paste: str
     owner: str
     updated_at: datetime
+
+
+class UsageReportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    format: str
+    month: str = Field(description="YYYY-MM")
+    rating: int = Field(description="Smogon's rating cutoff")
+    battles: int
+    loaded_at: datetime
+
+
+class UsageEntry(BaseModel):
+    id: str = Field(description="Showdown id, e.g. 'sitrusberry', or a spread 'Careful:252/4/0/0/252/0'")
+    share: float = Field(description="Share of this Pokémon's sets that have it (0-1)")
+
+
+class UsagePokemonOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    rank: int
+    species: str
+    usage: float = Field(description="Share of teams that use it (0-1)")
+    sets: dict[str, list[UsageEntry]] = Field(
+        description="Most common moves, items, abilities, spreads and Tera types, most common first"
+    )
+
+
+class UsageReportDetail(UsageReportOut):
+    pokemon: list[UsagePokemonOut]

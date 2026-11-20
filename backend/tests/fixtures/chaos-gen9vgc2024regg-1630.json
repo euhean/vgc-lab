@@ -1,0 +1,322 @@
+{
+ "info": {
+  "metagame": "gen9vgc2024regg",
+  "cutoff": 1630.0,
+  "cutoff deviation": 0,
+  "team type": null,
+  "number of battles": 52341
+ },
+ "data": {
+  "Incineroar": {
+   "Raw count": 5200,
+   "usage": 0.52,
+   "Abilities": {
+    "intimidate": 5200.0
+   },
+   "Moves": {
+    "fakeout": 5044.0,
+    "partingshot": 4160.0,
+    "knockoff": 3900.0,
+    "flareblitz": 3640.0,
+    "protect": 1560.0,
+    "": 104.0
+   },
+   "Items": {
+    "sitrusberry": 2340.0,
+    "safetygoggles": 1560.0,
+    "assaultvest": 1040.0,
+    "nothing": 52.0
+   },
+   "Spreads": {
+    "Careful:252/4/0/0/252/0": 1560.0,
+    "Adamant:252/252/0/0/4/0": 1040.0,
+    "Sassy:252/0/4/0/252/0": 520.0
+   },
+   "Tera Types": {
+    "ghost": 2600.0,
+    "grass": 1560.0,
+    "nothing": 260.0
+   },
+   "Happiness": {
+    "255": 5200.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Flutter Mane": {
+   "Raw count": 4400,
+   "usage": 0.44,
+   "Abilities": {
+    "protosynthesis": 4400.0
+   },
+   "Moves": {
+    "moonblast": 4312.0,
+    "shadowball": 4180.0,
+    "protect": 3740.0,
+    "icywind": 1760.0,
+    "dazzlinggleam": 1760.0
+   },
+   "Items": {
+    "boosterenergy": 2640.0,
+    "choicespecs": 1100.0,
+    "focussash": 440.0,
+    "nothing": 44.0
+   },
+   "Spreads": {
+    "Timid:4/0/0/252/0/252": 2200.0,
+    "Modest:4/0/0/252/0/252": 1320.0
+   },
+   "Tera Types": {
+    "fairy": 2640.0,
+    "grass": 880.0
+   },
+   "Happiness": {
+    "255": 4400.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Rillaboom": {
+   "Raw count": 3300,
+   "usage": 0.33,
+   "Abilities": {
+    "grassysurge": 3300.0
+   },
+   "Moves": {
+    "fakeout": 3168.0,
+    "grassyglide": 3135.0,
+    "woodhammer": 2970.0,
+    "uturn": 1980.0,
+    "highhorsepower": 990.0
+   },
+   "Items": {
+    "assaultvest": 1980.0,
+    "miracleseed": 660.0,
+    "choiceband": 330.0,
+    "nothing": 33.0
+   },
+   "Spreads": {
+    "Adamant:252/252/0/0/4/0": 1980.0,
+    "Adamant:212/252/0/0/36/8": 660.0
+   },
+   "Tera Types": {
+    "fire": 1650.0,
+    "grass": 990.0
+   },
+   "Happiness": {
+    "255": 3300.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Urshifu-Rapid-Strike": {
+   "Raw count": 3000,
+   "usage": 0.3,
+   "Abilities": {
+    "unseenfist": 3000.0
+   },
+   "Moves": {
+    "surgingstrikes": 2970.0,
+    "closecombat": 2700.0,
+    "aquajet": 2400.0,
+    "protect": 2100.0,
+    "uturn": 600.0
+   },
+   "Items": {
+    "choicescarf": 1200.0,
+    "mysticwater": 900.0,
+    "focussash": 600.0,
+    "nothing": 30.0
+   },
+   "Spreads": {
+    "Adamant:4/252/0/0/0/252": 1800.0,
+    "Jolly:4/252/0/0/0/252": 900.0
+   },
+   "Tera Types": {
+    "water": 2100.0,
+    "stellar": 300.0
+   },
+   "Happiness": {
+    "255": 3000.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Amoonguss": {
+   "Raw count": 2800,
+   "usage": 0.28,
+   "Abilities": {
+    "regenerator": 2800.0000000000005
+   },
+   "Moves": {
+    "spore": 2772.0,
+    "ragepowder": 2660.0,
+    "pollenpuff": 1960.0,
+    "protect": 1680.0,
+    "clearsmog": 840.0
+   },
+   "Items": {
+    "rockyhelmet": 1400.0,
+    "sitrusberry": 840.0,
+    "covertcloak": 280.0,
+    "nothing": 28.0
+   },
+   "Spreads": {
+    "Relaxed:252/0/172/0/84/0": 1400.0,
+    "Sassy:252/0/116/0/140/0": 840.0
+   },
+   "Tera Types": {
+    "water": 1680.0,
+    "steel": 560.0
+   },
+   "Happiness": {
+    "255": 2800.0000000000005
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Chien-Pao": {
+   "Raw count": 2500,
+   "usage": 0.25,
+   "Abilities": {
+    "swordofruin": 2500.0
+   },
+   "Moves": {
+    "suckerpunch": 2250.0,
+    "iciclecrash": 2375.0,
+    "sacredsword": 1500.0,
+    "protect": 2000.0,
+    "tailwind": 500.0
+   },
+   "Items": {
+    "focussash": 1500.0,
+    "lifeorb": 500.0,
+    "clearamulet": 250.0,
+    "nothing": 25.0
+   },
+   "Spreads": {
+    "Jolly:4/252/0/0/0/252": 2000.0
+   },
+   "Tera Types": {
+    "ghost": 1250.0,
+    "ice": 750.0
+   },
+   "Happiness": {
+    "255": 2500.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Kingambit": {
+   "Raw count": 2100,
+   "usage": 0.21,
+   "Abilities": {
+    "defiant": 2100.0
+   },
+   "Moves": {
+    "kowtowcleave": 1995.0,
+    "suckerpunch": 1890.0,
+    "protect": 1785.0,
+    "swordsdance": 840.0,
+    "ironhead": 630.0
+   },
+   "Items": {
+    "blackglasses": 840.0,
+    "assaultvest": 630.0,
+    "lumberry": 210.0,
+    "nothing": 21.0
+   },
+   "Spreads": {
+    "Adamant:252/252/0/0/4/0": 1470.0
+   },
+   "Tera Types": {
+    "dark": 1050.0,
+    "flying": 630.0
+   },
+   "Happiness": {
+    "255": 2100.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  },
+  "Tornadus": {
+   "Raw count": 1800,
+   "usage": 0.18,
+   "Abilities": {
+    "prankster": 1800.0
+   },
+   "Moves": {
+    "tailwind": 1764.0,
+    "bleakwindstorm": 1620.0,
+    "protect": 1260.0,
+    "taunt": 1080.0,
+    "raindance": 720.0
+   },
+   "Items": {
+    "focussash": 1080.0,
+    "covertcloak": 540.0,
+    "nothing": 18.0
+   },
+   "Spreads": {
+    "Timid:4/0/0/252/0/252": 1260.0
+   },
+   "Tera Types": {
+    "dark": 720.0,
+    "steel": 540.0
+   },
+   "Happiness": {
+    "255": 1800.0
+   },
+   "Teammates": {},
+   "Checks and Counters": {},
+   "Viability Ceiling": [
+    100,
+    80,
+    70,
+    60
+   ]
+  }
+ }
+}

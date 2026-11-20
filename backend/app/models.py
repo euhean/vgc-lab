@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from typing import Any
 
-from sqlalchemy import DateTime, Dialect, ForeignKey, String, Text, TypeDecorator
+from sqlalchemy import JSON, DateTime, Dialect, Float, ForeignKey, Integer, String, Text, TypeDecorator, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -72,3 +73,45 @@ class RefreshToken(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
     user: Mapped[User] = relationship(back_populates="refresh_tokens")
+
+
+class UsageReport(Base):
+    """One month of Smogon usage statistics for a format, at one rating cutoff.
+
+    Loaded by the usage pipeline (app/usage_stats.py). Reloading a month replaces its report.
+    """
+
+    __tablename__ = "usage_reports"
+    __table_args__ = (UniqueConstraint("format", "month", "rating"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    format: Mapped[str] = mapped_column(String(64), index=True)
+    # "YYYY-MM", the month of battles the statistics cover.
+    month: Mapped[str] = mapped_column(String(7))
+    # Smogon's rating cutoff: only battles from players above it are counted (weighted).
+    rating: Mapped[int] = mapped_column(Integer)
+    battles: Mapped[int] = mapped_column(Integer)
+    loaded_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+    pokemon: Mapped[list["UsagePokemon"]] = relationship(
+        back_populates="report", cascade="all, delete-orphan", order_by="UsagePokemon.rank"
+    )
+
+
+class UsagePokemon(Base):
+    """A Pokémon's usage in a report, with its most common moves, items, abilities and spreads."""
+
+    __tablename__ = "usage_pokemon"
+    __table_args__ = (UniqueConstraint("report_id", "species"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    report_id: Mapped[int] = mapped_column(ForeignKey("usage_reports.id", ondelete="CASCADE"), index=True)
+    rank: Mapped[int] = mapped_column(Integer)
+    species: Mapped[str] = mapped_column(String(64))
+    # Share of teams that use it, weighted by rating (0-1).
+    usage: Mapped[float] = mapped_column(Float)
+    # Lists of {"id", "share"} entries, most common first, e.g. {"moves": [{"id": "fakeout", "share": 0.98}, ...]}.
+    # Shares are of this Pokémon's sets; spreads are "Nature:HP/Atk/Def/SpA/SpD/Spe".
+    sets: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    report: Mapped[UsageReport] = relationship(back_populates="pokemon")

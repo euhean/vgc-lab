@@ -8,10 +8,17 @@ os.environ["JWT_SECRET"] = "test-secret-with-at-least-32-bytes!!"
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 
 from app.database import Base, engine
 from app.main import app
 from app.routers.auth import login_limiter
+
+
+@event.listens_for(engine, "connect")
+def enforce_foreign_keys(dbapi_connection, _record) -> None:  # type: ignore[no-untyped-def]
+    """SQLite ignores foreign keys unless asked, so ON DELETE CASCADE would behave unlike PostgreSQL."""
+    dbapi_connection.execute("PRAGMA foreign_keys = ON")
 
 
 @pytest.fixture

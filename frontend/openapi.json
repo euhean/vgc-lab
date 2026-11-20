@@ -542,6 +542,87 @@
         }
       }
     },
+    "/meta/reports": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "List Reports",
+        "description": "Public: every loaded usage report, newest month first.",
+        "operationId": "list_reports_meta_reports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UsageReportOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Reports Meta Reports Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/reports/{report_id}": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Read Report",
+        "description": "Public: a report with its `limit` most used Pok\u00e9mon and their most common sets.",
+        "operationId": "read_report_meta_reports__report_id__get",
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Report Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageReportDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -746,6 +827,152 @@
           "refresh_token"
         ],
         "title": "Token"
+      },
+      "UsageEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Showdown id, e.g. 'sitrusberry', or a spread 'Careful:252/4/0/0/252/0'"
+          },
+          "share": {
+            "type": "number",
+            "title": "Share",
+            "description": "Share of this Pok\u00e9mon's sets that have it (0-1)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "share"
+        ],
+        "title": "UsageEntry"
+      },
+      "UsagePokemonOut": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "species": {
+            "type": "string",
+            "title": "Species"
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage",
+            "description": "Share of teams that use it (0-1)"
+          },
+          "sets": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/UsageEntry"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Sets",
+            "description": "Most common moves, items, abilities, spreads and Tera types, most common first"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "species",
+          "usage",
+          "sets"
+        ],
+        "title": "UsagePokemonOut"
+      },
+      "UsageReportDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "YYYY-MM"
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating",
+            "description": "Smogon's rating cutoff"
+          },
+          "battles": {
+            "type": "integer",
+            "title": "Battles"
+          },
+          "loaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Loaded At"
+          },
+          "pokemon": {
+            "items": {
+              "$ref": "#/components/schemas/UsagePokemonOut"
+            },
+            "type": "array",
+            "title": "Pokemon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "format",
+          "month",
+          "rating",
+          "battles",
+          "loaded_at",
+          "pokemon"
+        ],
+        "title": "UsageReportDetail"
+      },
+      "UsageReportOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "YYYY-MM"
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating",
+            "description": "Smogon's rating cutoff"
+          },
+          "battles": {
+            "type": "integer",
+            "title": "Battles"
+          },
+          "loaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Loaded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "format",
+          "month",
+          "rating",
+          "battles",
+          "loaded_at"
+        ],
+        "title": "UsageReportOut"
       },
       "UserCreate": {
         "properties": {

@@ -181,6 +181,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/meta/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Reports
+         * @description Public: every loaded usage report, newest month first.
+         */
+        get: operations["list_reports_meta_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/meta/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Report
+         * @description Public: a report with its `limit` most used Pokémon and their most common sets.
+         */
+        get: operations["read_report_meta_reports__report_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -291,6 +331,88 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** UsageEntry */
+        UsageEntry: {
+            /**
+             * Id
+             * @description Showdown id, e.g. 'sitrusberry', or a spread 'Careful:252/4/0/0/252/0'
+             */
+            id: string;
+            /**
+             * Share
+             * @description Share of this Pokémon's sets that have it (0-1)
+             */
+            share: number;
+        };
+        /** UsagePokemonOut */
+        UsagePokemonOut: {
+            /** Rank */
+            rank: number;
+            /** Species */
+            species: string;
+            /**
+             * Usage
+             * @description Share of teams that use it (0-1)
+             */
+            usage: number;
+            /**
+             * Sets
+             * @description Most common moves, items, abilities, spreads and Tera types, most common first
+             */
+            sets: {
+                [key: string]: components["schemas"]["UsageEntry"][];
+            };
+        };
+        /** UsageReportDetail */
+        UsageReportDetail: {
+            /** Id */
+            id: number;
+            /** Format */
+            format: string;
+            /**
+             * Month
+             * @description YYYY-MM
+             */
+            month: string;
+            /**
+             * Rating
+             * @description Smogon's rating cutoff
+             */
+            rating: number;
+            /** Battles */
+            battles: number;
+            /**
+             * Loaded At
+             * Format: date-time
+             */
+            loaded_at: string;
+            /** Pokemon */
+            pokemon: components["schemas"]["UsagePokemonOut"][];
+        };
+        /** UsageReportOut */
+        UsageReportOut: {
+            /** Id */
+            id: number;
+            /** Format */
+            format: string;
+            /**
+             * Month
+             * @description YYYY-MM
+             */
+            month: string;
+            /**
+             * Rating
+             * @description Smogon's rating cutoff
+             */
+            rating: number;
+            /** Battles */
+            battles: number;
+            /**
+             * Loaded At
+             * Format: date-time
+             */
+            loaded_at: string;
         };
         /** UserCreate */
         UserCreate: {
@@ -713,6 +835,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharedTeamOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reports_meta_reports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageReportOut"][];
+                };
+            };
+        };
+    };
+    read_report_meta_reports__report_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                report_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageReportDetail"];
                 };
             };
             /** @description Validation Error */
