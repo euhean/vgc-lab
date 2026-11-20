@@ -125,6 +125,15 @@ button.slot:hover { border-color: var(--muted); }
 .mods { list-style: none; padding: 0; margin: 8px 0 0; font-size: 12px; }
 .mods li { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid var(--border); }
 
+/* EV optimizer */
+.goal { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.result { background: var(--raised); }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.checks li { display: flex; flex-direction: column; gap: 2px; padding-left: 22px; position: relative; }
+.checks li::before { position: absolute; left: 0; top: 0; font-weight: 600; }
+.checks li.ok::before { content: '✓'; color: var(--white); }
+.checks li.fail::before { content: '✗'; color: var(--danger); }
+
 .stats { border-collapse: collapse; width: 100%; }
 .stats th, .stats td { padding: 4px 6px; text-align: left; }
 .stats input[type='number'] { width: 64px; }

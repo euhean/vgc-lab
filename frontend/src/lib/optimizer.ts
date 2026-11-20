@@ -36,8 +36,10 @@ export interface SurviveGoal {
   move: string;
   /** Survive this many hits of the move in a row. */
   hits: 1 | 2;
-  /** Stage of the attacker's attacking stat, e.g. -1 after Intimidate. */
+  /** Stage of the attacker's attacking stat from other effects, e.g. +2 after Swords Dance. */
   attackerStage: number;
+  /** The attacker was hit by Intimidate; its ability decides what that does (see intimidateEffect). */
+  intimidated: boolean;
   /** Share of damage rolls that must be survived: 1 = every roll, 15/16 = all but the highest. */
   minChance: number;
 }
@@ -204,13 +206,45 @@ function speedOf(goal: SpeedGoal, set: PokemonSet, c: Conditions): [mine: number
   ];
 }
 
+/** Abilities that stop Intimidate from lowering Attack (Gen 9). */
+const IGNORES_INTIMIDATE = new Set([
+  'Clear Body', 'White Smoke', 'Full Metal Body', 'Hyper Cutter', 'Inner Focus', 'Oblivious', 'Own Tempo', 'Scrappy',
+  'Mirror Armor',
+]);
+
+/**
+ * Stat stages Intimidate leaves on a Pokémon, depending on its ability: Defiant and Guard Dog
+ * end at +1 Atk, Competitive raises SpA by 2, and several abilities block the drop entirely.
+ */
+export function intimidateEffect(target: PokemonSet): { boosts: Boosts; note: string } {
+  switch (target.ability) {
+    case 'Defiant':
+      return { boosts: { atk: 1 }, note: 'Defiant: Intimidate leaves it at +1 Atk' };
+    case 'Guard Dog':
+      return { boosts: { atk: 1 }, note: 'Guard Dog: Intimidate raises its Atk' };
+    case 'Competitive':
+      return { boosts: { atk: -1, spa: 2 }, note: 'Competitive: Intimidate raises its SpA by 2' };
+    default:
+      if (IGNORES_INTIMIDATE.has(target.ability)) return { boosts: {}, note: `${target.ability}: Intimidate has no effect` };
+      return { boosts: { atk: -1 }, note: '' };
+  }
+}
+
+const clampStage = (n: number) => Math.max(-6, Math.min(6, n));
+
+function attackerBoosts(goal: SurviveGoal): Boosts {
+  const boosts: Boosts = goal.intimidated ? { ...intimidateEffect(goal.attacker).boosts } : {};
+  const stat = offensiveStat(goal.move);
+  boosts[stat] = clampStage((boosts[stat] ?? 0) + goal.attackerStage);
+  return boosts;
+}
+
 function isMultiHit(result: Result): boolean {
   return Array.isArray(result.damage) && Array.isArray(result.damage[0]);
 }
 
 function surviveChance(goal: SurviveGoal, set: PokemonSet, c: Conditions): { chance: number; result: Result } {
-  const attackerBoosts: Boosts = { [offensiveStat(goal.move)]: goal.attackerStage };
-  const result = calcDamage(goal.attacker, set, goal.move, c, false, { attacker: attackerBoosts });
+  const result = calcDamage(goal.attacker, set, goal.move, c, false, { attacker: attackerBoosts(goal) });
   const ko = koChance(
     damageDistribution(result.damage), goal.hits, result.defender.maxHP(),
     survivalTraits(set, goal.attacker), isMultiHit(result),
@@ -252,9 +286,9 @@ function rangeText(result: Result): string {
   return `${min}–${max} damage (${pct(min / hp)}–${pct(max / hp)} of ${hp} HP)`;
 }
 
-/** Explains Focus Sash, Sturdy and Sitrus Berry effects that the damage range alone hides. */
-function itemNotes(traits: Survival, hits: 1 | 2, multiHit: boolean): string {
-  const notes: string[] = [];
+/** Explains ability and item effects that the damage range alone hides. */
+function itemNotes(traits: Survival, hits: 1 | 2, multiHit: boolean, abilityNote: string): string {
+  const notes: string[] = abilityNote ? [abilityNote] : [];
   if (traits.endures && !multiHit) notes.push('Focus Sash / Sturdy leaves 1 HP after a single hit from full HP');
   if (traits.sitrus && hits === 2) notes.push('Sitrus Berry heals between hits');
   return notes.length ? ` (${notes.join('; ')})` : '';
@@ -269,13 +303,14 @@ export function checkGoal(goal: Goal, set: PokemonSet, c: Conditions): GoalCheck
     }
     case 'survive': {
       const { chance, result } = surviveChance(goal, set, c);
-      const notes = itemNotes(survivalTraits(set, goal.attacker), goal.hits, isMultiHit(result));
+      const intimidate = goal.intimidated ? intimidateEffect(goal.attacker).note : '';
+      const notes = itemNotes(survivalTraits(set, goal.attacker), goal.hits, isMultiHit(result), intimidate);
       const hits = goal.hits === 2 ? ' per hit' : '';
       return { goal, ok: chance >= goal.minChance, detail: `Takes ${rangeText(result)}${hits}; survives ${pct(chance)} of rolls${notes}` };
     }
     case 'ko': {
       const { chance, result } = koChanceOf(goal, set, c);
-      const notes = itemNotes(survivalTraits(goal.defender, set), goal.hits, isMultiHit(result));
+      const notes = itemNotes(survivalTraits(goal.defender, set), goal.hits, isMultiHit(result), '');
       const hits = goal.hits === 2 ? ' per hit' : '';
       return { goal, ok: chance >= goal.minChance, detail: `Deals ${rangeText(result)}${hits}; KOs ${pct(chance)} of rolls${notes}` };
     }
@@ -297,7 +332,8 @@ export function describeGoal(goal: Goal): string {
     }
     case 'survive':
       return `Survive ${goal.hits === 2 ? 'two of ' : ''}${goal.attacker.species}'s ${goal.move}` +
-        `${stageText(goal.attackerStage, offensiveStat(goal.move))}${goal.minChance < 1 ? ' (15 of 16 rolls)' : ''}`;
+        `${stageText(goal.attackerStage, offensiveStat(goal.move))}${goal.intimidated ? ' after Intimidate' : ''}` +
+        `${goal.minChance < 1 ? ' (15 of 16 rolls)' : ''}`;
     case 'ko':
       return `${goal.hits === 1 ? 'OHKO' : '2HKO'} ${goal.defender.species} with ${goal.move}` +
         `${goal.minChance < 1 ? ' (15 of 16 rolls)' : ''}`;

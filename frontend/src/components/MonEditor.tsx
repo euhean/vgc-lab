@@ -3,6 +3,7 @@ import type { StatID } from '@pkmn/types';
 import { toCalcPokemon, type Conditions } from '../lib/battle';
 import { abilitiesOf, getSpecies, ITEMS, learnableMoves, NATURES, TYPES } from '../lib/dex';
 import { MAX_TOTAL_EVS, setEv, setIv, STAT_LABELS, STATS, totalEvs, type PokemonSet } from '../lib/team';
+import EvOptimizer from './EvOptimizer';
 import MoveTooltip from './MoveTooltip';
 import { Sprite, TypePill } from './Sprite';
 
@@ -16,7 +17,7 @@ interface Props {
 }
 
 export default function MonEditor({ set, targets, conditions, onChange, onRemove, onClose }: Props) {
-  const [tab, setTab] = useState<'set' | 'training'>('set');
+  const [tab, setTab] = useState<'set' | 'training' | 'optimizer'>('set');
   const [moves, setMoves] = useState<string[]>([]);
   const [targetIndex, setTargetIndex] = useState(0);
   const species = getSpecies(set.species);
@@ -54,7 +55,10 @@ export default function MonEditor({ set, targets, conditions, onChange, onRemove
         <div className="tabs">
           <button className={tab === 'set' ? 'active' : ''} onClick={() => setTab('set')}>Set</button>
           <button className={tab === 'training' ? 'active' : ''} onClick={() => setTab('training')}>Appearance & training</button>
+          <button className={tab === 'optimizer' ? 'active' : ''} onClick={() => setTab('optimizer')}>EV optimizer</button>
         </div>
+
+        {tab === 'optimizer' && <EvOptimizer set={set} targets={targets} conditions={conditions} onApply={onChange} />}
 
         {tab === 'set' && (
           <div className="form-grid">

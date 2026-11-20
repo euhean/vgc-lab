@@ -22,7 +22,7 @@ const incineroar = mk('Incineroar', { nature: 'Careful', item: 'Sitrus Berry', a
 const amoonguss = mk('Amoonguss', { nature: 'Relaxed', item: 'Rocky Helmet', ability: 'Regenerator', moves: ['Pollen Puff'] });
 
 const outspeedRilla: Goal = { kind: 'outspeed', target: rillaboom, myStage: 0, targetStage: 0, myTailwind: false, targetTailwind: false };
-const twoMoonblasts: Goal = { kind: 'survive', attacker: flutter, move: 'Moonblast', hits: 2, attackerStage: 0, minChance: 1 };
+const twoMoonblasts: Goal = { kind: 'survive', attacker: flutter, move: 'Moonblast', hits: 2, attackerStage: 0, intimidated: false, minChance: 1 };
 
 /** The previous useful EV value of a stat, i.e. one stat point less. */
 function oneStepLess(set: PokemonSet, stat: keyof StatsTable): PokemonSet {
@@ -121,11 +121,19 @@ describe('defensive benchmarks', () => {
     expect(result.problem).toContain("Survive two of Flutter Mane's Moonblast");
   });
 
-  it('accounts for Intimidate on the attacker', () => {
-    const kowtow: Goal = { kind: 'survive', attacker: kingambit, move: 'Kowtow Cleave', hits: 2, attackerStage: 0, minChance: 1 };
-    const plain = optimize(incineroar, [kowtow], C, noLeftovers);
-    const intimidated = optimize(incineroar, [{ ...kowtow, attackerStage: -1 }], C, noLeftovers);
+  it('accounts for Intimidate, including abilities that turn it around', () => {
+    const rillaHit: Goal = { kind: 'survive', attacker: rillaboom, move: 'Wood Hammer', hits: 2, attackerStage: 0, intimidated: false, minChance: 1 };
+    const plain = optimize(amoonguss, [rillaHit], C, noLeftovers);
+    const intimidated = optimize(amoonguss, [{ ...rillaHit, intimidated: true }], C, noLeftovers);
     expect(intimidated.evsForGoals).toBeLessThanOrEqual(plain.evsForGoals);
+
+    // Defiant Kingambit ends at +1 Atk after Intimidate, so it hits harder, not softer.
+    const kowtow: Goal = { kind: 'survive', attacker: kingambit, move: 'Kowtow Cleave', hits: 1, attackerStage: 0, intimidated: false, minChance: 1 };
+    const normal = checkGoal(kowtow, incineroar, C);
+    const defiant = checkGoal({ ...kowtow, intimidated: true }, incineroar, C);
+    expect(defiant.detail).toContain('Defiant');
+    const maxDamage = (detail: string) => Number(detail.match(/–(\d+) damage/)![1]);
+    expect(maxDamage(defiant.detail)).toBeGreaterThan(maxDamage(normal.detail));
   });
 });
 

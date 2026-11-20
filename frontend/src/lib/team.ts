@@ -71,3 +71,9 @@ export function setEv(evs: StatsTable, stat: StatID, value: number): StatsTable 
 export function setIv(ivs: StatsTable, stat: StatID, value: number): StatsTable {
   return { ...ivs, [stat]: Math.max(0, Math.min(31, Math.floor(value))) };
 }
+
+/** Showdown-style EV spread, e.g. "252 HP / 4 Def / 252 SpD". */
+export function spreadText(set: PokemonSet): string {
+  const parts = STATS.filter((s) => set.evs[s] > 0).map((s) => `${set.evs[s]} ${STAT_LABELS[s]}`);
+  return parts.length ? parts.join(' / ') : 'No EVs';
+}

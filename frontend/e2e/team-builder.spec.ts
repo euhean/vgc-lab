@@ -16,7 +16,7 @@ Careful Nature
 - Fake Out
 - Flare Blitz`;
 
-test('sign up, build a team, save it, compare it and share it', async ({ page, browser }) => {
+test('sign up, build a team, optimize a spread, compare it and share it', async ({ page, browser }) => {
   const username = `trainer${Date.now()}`;
 
   await test.step('sign up', async () => {
@@ -58,6 +58,19 @@ test('sign up, build a team, save it, compare it and share it', async ({ page, b
     const tooltip = page.locator('.move-row').first().locator('.tooltip');
     await expect(tooltip.locator('.formula')).toContainText('= ');
     await expect(tooltip).toContainText('HP (');
+    await page.getByRole('button', { name: 'Done' }).click();
+  });
+
+  await test.step('the EV optimizer finds and applies a spread', async () => {
+    await page.locator('button.slot', { hasText: 'Incineroar' }).click();
+    await page.getByRole('button', { name: 'EV optimizer' }).click();
+    await page.getByRole('button', { name: '+ Survive' }).click();
+    await page.locator('.goal').getByLabel('Pokémon').selectOption({ label: 'Flutter Mane' });
+    await page.getByRole('button', { name: 'Find spread' }).click();
+    const result = page.locator('.result').first();
+    await expect(result).toContainText("Survive Flutter Mane's Moonblast");
+    await result.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByRole('status')).toContainText('Applied');
     await page.getByRole('button', { name: 'Done' }).click();
   });
 
