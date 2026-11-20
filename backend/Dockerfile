@@ -1,7 +1,17 @@
+# The battle simulator's dependencies, installed with Node.
+FROM node:22-slim AS sim
+WORKDIR /sim
+COPY sim/package.json sim/package-lock.json ./
+RUN npm ci --omit=dev
+
 FROM python:3.13-slim
+# Node runs the battle simulator (sim/), which the API starts as child processes.
+COPY --from=sim /usr/local/bin/node /usr/local/bin/node
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=sim /sim/node_modules ./sim/node_modules
+COPY sim ./sim
 COPY alembic.ini .
 COPY migrations ./migrations
 COPY app ./app

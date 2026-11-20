@@ -221,6 +221,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/battles/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate Games
+         * @description Monte Carlo win rate: plays `games` battles between two of your teams, with an AI on each side.
+         */
+        post: operations["simulate_games_battles_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -280,6 +300,44 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** SimulationIn */
+        SimulationIn: {
+            /** Team Id */
+            team_id: number;
+            /** Opponent Team Id */
+            opponent_team_id: number;
+            /**
+             * Games
+             * @default 100
+             */
+            games: number;
+        };
+        /** SimulationOut */
+        SimulationOut: {
+            /** Games */
+            games: number;
+            /** Wins */
+            wins: number;
+            /** Losses */
+            losses: number;
+            /** Ties */
+            ties: number;
+            /**
+             * Win Rate
+             * @description Share of games won (0-1)
+             */
+            win_rate: number;
+            /**
+             * Win Rate Low
+             * @description Lower bound of the 95% confidence interval
+             */
+            win_rate_low: number;
+            /**
+             * Win Rate High
+             * @description Upper bound of the 95% confidence interval
+             */
+            win_rate_high: number;
         };
         /** TeamIn */
         TeamIn: {
@@ -888,6 +946,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsageReportDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_games_battles_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationOut"];
                 };
             };
             /** @description Validation Error */

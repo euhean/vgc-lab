@@ -19,6 +19,16 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      # The battle endpoints start the Node simulator in backend/sim.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/sim/package-lock.json
+      - run: npm ci
+        working-directory: backend/sim
+      - run: npm test
+        working-directory: backend/sim
       - run: pytest
 
   frontend:

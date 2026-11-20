@@ -85,3 +85,19 @@ class UsagePokemonOut(BaseModel):
 
 class UsageReportDetail(UsageReportOut):
     pokemon: list[UsagePokemonOut]
+
+
+class SimulationIn(BaseModel):
+    team_id: int
+    opponent_team_id: int
+    games: int = Field(default=100, ge=1, le=500)
+
+
+class SimulationOut(BaseModel):
+    games: int
+    wins: int
+    losses: int
+    ties: int
+    win_rate: float = Field(description="Share of games won (0-1)")
+    win_rate_low: float = Field(description="Lower bound of the 95% confidence interval")
+    win_rate_high: float = Field(description="Upper bound of the 95% confidence interval")

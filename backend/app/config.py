@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     refresh_token_days: int = 30
     cors_origins: list[str] = ["http://localhost:5173"]
     failed_logins_per_minute: int = 10
+    max_live_battles: int = 20
+    max_simulations: int = 1
+    simulation_timeout_seconds: float = 120
 
 
 settings = Settings()

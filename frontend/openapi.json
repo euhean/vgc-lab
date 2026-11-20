@@ -623,6 +623,53 @@
         }
       }
     },
+    "/battles/simulate": {
+      "post": {
+        "tags": [
+          "battles"
+        ],
+        "summary": "Simulate Games",
+        "description": "Monte Carlo win rate: plays `games` battles between two of your teams, with an AI on each side.",
+        "operationId": "simulate_games_battles_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -727,6 +774,77 @@
         ],
         "title": "SharedTeamOut",
         "description": "What anyone with a share link can see: no ids or emails."
+      },
+      "SimulationIn": {
+        "properties": {
+          "team_id": {
+            "type": "integer",
+            "title": "Team Id"
+          },
+          "opponent_team_id": {
+            "type": "integer",
+            "title": "Opponent Team Id"
+          },
+          "games": {
+            "type": "integer",
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Games",
+            "default": 100
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "opponent_team_id"
+        ],
+        "title": "SimulationIn"
+      },
+      "SimulationOut": {
+        "properties": {
+          "games": {
+            "type": "integer",
+            "title": "Games"
+          },
+          "wins": {
+            "type": "integer",
+            "title": "Wins"
+          },
+          "losses": {
+            "type": "integer",
+            "title": "Losses"
+          },
+          "ties": {
+            "type": "integer",
+            "title": "Ties"
+          },
+          "win_rate": {
+            "type": "number",
+            "title": "Win Rate",
+            "description": "Share of games won (0-1)"
+          },
+          "win_rate_low": {
+            "type": "number",
+            "title": "Win Rate Low",
+            "description": "Lower bound of the 95% confidence interval"
+          },
+          "win_rate_high": {
+            "type": "number",
+            "title": "Win Rate High",
+            "description": "Upper bound of the 95% confidence interval"
+          }
+        },
+        "type": "object",
+        "required": [
+          "games",
+          "wins",
+          "losses",
+          "ties",
+          "win_rate",
+          "win_rate_low",
+          "win_rate_high"
+        ],
+        "title": "SimulationOut"
       },
       "TeamIn": {
         "properties": {
