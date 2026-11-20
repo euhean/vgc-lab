@@ -53,6 +53,18 @@ describe('damage matrix', () => {
 });
 
 describe('speed', () => {
+  it('applies Booster Energy to the highest stat', () => {
+    const plain = { ...flutter, item: 'Life Orb' };
+    const booster = { ...flutter, item: 'Booster Energy' };
+    // Timid Flutter Mane's highest stat is Speed, boosted by 50%.
+    expect(effectiveSpeed(booster, DEFAULT_CONDITIONS, true)).toBe(Math.floor(effectiveSpeed(plain, DEFAULT_CONDITIONS, true) * 1.5));
+  });
+
+  it('applies stat stages such as Icy Wind', () => {
+    const base = effectiveSpeed(flutter, DEFAULT_CONDITIONS, true);
+    expect(effectiveSpeed(flutter, DEFAULT_CONDITIONS, true, { spe: -1 })).toBe(Math.floor(base * 2 / 3));
+  });
+
   it('doubles speed under Tailwind', () => {
     const base = effectiveSpeed(flutter, DEFAULT_CONDITIONS, true);
     const tailwind = effectiveSpeed(flutter, { ...DEFAULT_CONDITIONS, mine: { ...DEFAULT_CONDITIONS.mine, tailwind: true } }, true);

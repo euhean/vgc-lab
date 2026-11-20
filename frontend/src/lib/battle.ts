@@ -42,7 +42,13 @@ export const DEFAULT_CONDITIONS: Conditions = {
   gameType: 'Doubles', weather: '', terrain: '', trickRoom: false, mine: noSide, theirs: noSide,
 };
 
-export function toCalcPokemon(set: PokemonSet, terastallized: boolean): Pokemon {
+/** Stat stages, from -6 to +6, e.g. -1 Atk after Intimidate or -1 Spe after Icy Wind. */
+export type Boosts = Partial<Record<'atk' | 'def' | 'spa' | 'spd' | 'spe', number>>;
+
+/** Abilities that boost the highest stat when Booster Energy, Sun or Electric Terrain activates them. */
+const PARADOX_ABILITIES = new Set(['Protosynthesis', 'Quark Drive']);
+
+export function toCalcPokemon(set: PokemonSet, terastallized: boolean, boosts: Boosts = {}): Pokemon {
   return new Pokemon(calcGen, set.species, {
     level: set.level,
     // Ignore half-typed or unknown item names while the user is editing.
@@ -52,7 +58,10 @@ export function toCalcPokemon(set: PokemonSet, terastallized: boolean): Pokemon 
     evs: set.evs,
     ivs: set.ivs,
     moves: set.moves,
+    boosts,
     teraType: terastallized && set.teraType ? (set.teraType as TypeName) : undefined,
+    // The calc only applies Protosynthesis / Quark Drive when told to work out the boosted stat.
+    boostedStat: PARADOX_ABILITIES.has(set.ability) ? 'auto' : undefined,
   });
 }
 
@@ -79,12 +88,15 @@ export function toField(c: Conditions, attackerIsMine: boolean): Field {
   });
 }
 
-export function calcDamage(attacker: PokemonSet, defender: PokemonSet, move: string, c: Conditions, attackerIsMine: boolean): Result {
+export function calcDamage(
+  attacker: PokemonSet, defender: PokemonSet, move: string, c: Conditions, attackerIsMine: boolean,
+  boosts: { attacker?: Boosts; defender?: Boosts } = {},
+): Result {
   const [attackerSide, defenderSide] = attackerIsMine ? [c.mine, c.theirs] : [c.theirs, c.mine];
   return calculate(
     calcGen,
-    toCalcPokemon(attacker, attackerSide.tera),
-    toCalcPokemon(defender, defenderSide.tera),
+    toCalcPokemon(attacker, attackerSide.tera, boosts.attacker),
+    toCalcPokemon(defender, defenderSide.tera, boosts.defender),
     new Move(calcGen, move),
     toField(c, attackerIsMine),
   );
@@ -199,10 +211,10 @@ export function formulaBreakdown(result: Result, c: Conditions): FormulaBreakdow
   };
 }
 
-/** Effective speed with item, ability, Tailwind and weather/terrain speed abilities applied. */
-export function effectiveSpeed(set: PokemonSet, c: Conditions, mine: boolean): number {
+/** Effective speed with item, ability, stat stages, Tailwind and weather/terrain speed abilities applied. */
+export function effectiveSpeed(set: PokemonSet, c: Conditions, mine: boolean, boosts: Boosts = {}): number {
   const field = toField(c, mine);
-  return getFinalSpeed(calcGen, toCalcPokemon(set, false), field, field.attackerSide);
+  return getFinalSpeed(calcGen, toCalcPokemon(set, false, boosts), field, field.attackerSide);
 }
 
 export interface SpeedEntry {
