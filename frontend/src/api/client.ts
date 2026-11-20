@@ -35,6 +35,7 @@ export class ApiError extends Error {
 export type User = components['schemas']['UserOut'];
 export type TeamInput = components['schemas']['TeamIn'];
 export type TeamRecord = components['schemas']['TeamOut'];
+export type Simulation = components['schemas']['SimulationOut'];
 export type SharedTeam = components['schemas']['SharedTeamOut'];
 
 const client = createClient<paths>({ baseUrl: API_URL });
@@ -121,6 +122,8 @@ export const api = {
   unshareTeam: (id: number) => unwrap(client.DELETE('/teams/{team_id}/share', { params: { path: { team_id: id } } })),
   getSharedTeam: (shareId: string) =>
     unwrap(client.GET('/shared/{share_id}', { params: { path: { share_id: shareId } } })),
+  simulate: (teamId: number, opponentTeamId: number, games: number) =>
+    unwrap(client.POST('/battles/simulate', { body: { team_id: teamId, opponent_team_id: opponentTeamId, games } })),
   listUsageReports: () => unwrap(client.GET('/meta/reports')),
   getUsageReport: (id: number, limit: number) =>
     unwrap(client.GET('/meta/reports/{report_id}', { params: { path: { report_id: id }, query: { limit } } })),

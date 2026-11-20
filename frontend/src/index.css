@@ -181,3 +181,27 @@ button.slot:hover { border-color: var(--muted); }
 .threat-detail pre { margin: 0; font-family: 'JetBrains Mono', monospace; }
 .threat-detail ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 @media (max-width: 700px) { .threat-detail { grid-template-columns: 1fr; } }
+
+/* Battles */
+.battle-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.active-card { display: flex; align-items: center; gap: 12px; padding: 10px; }
+.active-card.fainted { opacity: 0.4; }
+.active-card.empty { justify-content: center; min-height: 84px; border-style: dashed; }
+.hp-bar { height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden; }
+.hp-bar div { height: 100%; background: var(--white); transition: width 0.4s; }
+.move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.move-grid button { justify-content: space-between; display: flex; }
+.pick { position: relative; }
+.pick.picked { border-color: var(--white); color: var(--white); }
+.badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-right: 6px; border-radius: 50%; background: var(--white); color: var(--bg); font-size: 11px; font-weight: 600; }
+.battle-log { max-height: 70vh; overflow-y: auto; font-size: 12px; }
+.battle-log p { margin: 2px 0; }
+.battle-log p.turn { margin-top: 10px; font-weight: 600; color: var(--white); }
+.result-banner strong { font-size: 18px; }
+@media (max-width: 900px) { .battle-grid { grid-template-columns: 1fr; } .field-row, .move-grid { grid-template-columns: 1fr; } }
+.button.disabled { pointer-events: none; opacity: 0.5; }
+.win-rate { display: flex; flex-direction: column; gap: 6px; }
+.win-bar { position: relative; height: 8px; border-radius: 4px; background: var(--raised); }
+.win-bar .interval { position: absolute; top: 0; bottom: 0; background: var(--border); border-radius: 4px; }
+.win-bar .point { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--white); }

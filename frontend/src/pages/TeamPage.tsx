@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, type TeamRecord } from '../api/client';
+import { api, type Simulation, type TeamRecord } from '../api/client';
 import ComparePanel from '../components/ComparePanel';
 import MetaThreats from '../components/MetaThreats';
 import MonEditor from '../components/MonEditor';
@@ -22,6 +22,9 @@ export default function TeamPage() {
   const [comparing, setComparing] = useState(false);
   const [threats, setThreats] = useState(false);
   const [status, setStatus] = useState('');
+  const [games, setGames] = useState(100);
+  const [simulating, setSimulating] = useState(false);
+  const [simulation, setSimulation] = useState<{ opponentId: number; result: Simulation } | null>(null);
 
   useEffect(() => {
     api.getTeam(id).then((team) => {
@@ -71,6 +74,17 @@ export default function TeamPage() {
     setStatus('Share link copied to clipboard');
   };
 
+  const simulate = async () => {
+    setSimulating(true);
+    try {
+      setSimulation({ opponentId: opponentId!, result: await api.simulate(id, opponentId!, games) });
+    } catch (e) {
+      setStatus((e as Error).message);
+    } finally {
+      setSimulating(false);
+    }
+  };
+
   const stopSharing = async () => {
     setRecord(await api.unshareTeam(id));
     setStatus('Share link removed');
@@ -118,6 +132,30 @@ export default function TeamPage() {
           </div>
         </div>
 
+        {opponent && (
+          <div className="card stack">
+            <div className="row between wrap">
+              <span className="muted small">
+                Battle {opponent.name} with an AI opponent, or let the AI play both sides many times for a win rate.
+                {dirty && ' Save first: battles use the saved teams.'}
+              </span>
+              <div className="row wrap">
+                <Link to={`/teams/${id}/battle/${opponent.id}`} className={`button ${dirty || sets.length === 0 ? 'disabled' : ''}`}>
+                  Battle
+                </Link>
+                <select aria-label="Games" value={games} onChange={(e) => setGames(Number(e.target.value))}>
+                  {[50, 100, 250, 500].map((n) => <option key={n} value={n}>{n} games</option>)}
+                </select>
+                <button className="ghost" onClick={simulate} disabled={dirty || simulating || sets.length === 0}>
+                  {simulating && <span className="spinner" aria-hidden="true" />}
+                  {simulating ? 'Simulating…' : 'Win rate'}
+                </button>
+              </div>
+            </div>
+            {simulation?.opponentId === opponent.id && <WinRate result={simulation.result} />}
+          </div>
+        )}
+
         <div className="card row between wrap">
           {record.share_id ? (
             <>
@@ -163,6 +201,22 @@ export default function TeamPage() {
       {comparing && opponent && (
         <ComparePanel mine={sets} theirs={opponentSets} conditions={conditions} onConditions={setConditions} onClose={() => setComparing(false)} />
       )}
+    </div>
+  );
+}
+
+function WinRate({ result }: { result: Simulation }) {
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  return (
+    <div className="win-rate" role="status">
+      <div className="win-bar" aria-hidden="true">
+        <div className="interval" style={{ left: pct(result.win_rate_low), width: pct(result.win_rate_high - result.win_rate_low) }} />
+        <div className="point" style={{ left: pct(result.win_rate) }} />
+      </div>
+      <span>
+        <strong>Win rate {pct(result.win_rate)}</strong>
+        <span className="muted small"> (95% confidence {pct(result.win_rate_low)}–{pct(result.win_rate_high)}) · {result.wins} won, {result.losses} lost, {result.ties} tied of {result.games}</span>
+      </span>
     </div>
   );
 }

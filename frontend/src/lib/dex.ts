@@ -1,8 +1,10 @@
 import { Dex } from '@pkmn/dex';
 import { Generations, type Specie, type TypeName } from '@pkmn/data';
 
+export const gens = new Generations(Dex);
+
 /** Scarlet/Violet data. Every lookup in the app goes through this generation. */
-export const gen = new Generations(Dex).get(9);
+export const gen = gens.get(9);
 
 export const TYPES: TypeName[] = [...gen.types].map((t) => t.name).filter((t) => t !== 'Stellar');
 

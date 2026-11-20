@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 // The team pages need the Pokédex and damage calc data (several MB), so they load on demand.
 const TeamPage = lazy(() => import('./pages/TeamPage'));
 const SharedTeamPage = lazy(() => import('./pages/SharedTeamPage'));
+const BattlePage = lazy(() => import('./pages/BattlePage'));
 
 
 function Header() {
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
               <Route path="/teams/:id" element={<RequireAuth><TeamPage /></RequireAuth>} />
+              <Route path="/teams/:id/battle/:opponentId" element={<RequireAuth><BattlePage /></RequireAuth>} />
               <Route path="/t/:shareId" element={<SharedTeamPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
