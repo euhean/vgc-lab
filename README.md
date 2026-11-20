@@ -17,6 +17,15 @@ other teams: speed order, damage between every move and every target, and type m
 - **Pokédex**: search every Pokémon available in Scarlet/Violet by name and filter by type.
 - **Set editor**: ability, item, nature, Tera Type and moves (only moves the Pokémon can learn),
   plus shiny, level, EVs and IVs with the final stats shown live.
+- **EV optimizer**: set the benchmarks a Pokémon must hit and get the spread that meets all of
+  them with the fewest EVs, the way competitive players build spreads by hand:
+  - outspeed or underspeed (Trick Room) a target, with Speed stages and Tailwind;
+  - survive one or two of a chosen attack, with stat stages and ability-aware Intimidate;
+  - OHKO or 2HKO a target with one of your moves.
+
+  Items and abilities go through the damage calc (Assault Vest, Choice items, Booster Energy…),
+  KO odds use every damage roll, and Focus Sash, Sturdy and Sitrus Berry are accounted for.
+  It can compare every nature and lowers the Speed IV for Trick Room when needed.
 - **Move hover**: hovering a move shows the damage formula with the real numbers plugged in,
   the modifiers that apply and the damage range against a chosen target. Status moves show
   their effect instead.
@@ -130,6 +139,12 @@ build, the end-to-end test against the Docker Compose stack, and an API contract
 - **Team pages load on demand.** The Pokédex and calc data are several megabytes, so only the
   team pages load them. The first download went from 2.8 MB (612 KB gzipped) to 436 KB
   (137 KB gzipped).
+- **How the EV optimizer searches.** At level 50 a stat point costs 8 EVs (4 for the first), so
+  only the 33 EV values that raise a stat are tried. Speed and offence each depend on one stat,
+  so the cheapest value is found directly. Defensive benchmarks share HP: for every HP value, a
+  binary search finds the cheapest Def and SpD that pass (survival only improves with bulk), and
+  the split with the fewest total EVs wins. KO odds come from the exact distribution of the 16
+  damage rolls, convolved across the hits of multi-hit moves and across two attacks.
 - **One API, one database.** Splitting into services would add deployment and coordination work
   with no benefit at this size.
 
